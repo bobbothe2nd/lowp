@@ -1,0 +1,15 @@
+[package]
+name = "lowp"
+description = "Lightweight software floats for low-precision formats"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+float8 = "0.7"
+
+[[bench]]
+name = "float8"
+harness = false
