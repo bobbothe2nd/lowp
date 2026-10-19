@@ -16,6 +16,14 @@ macro_rules! impl_float8 {
         impl $name {
             pub const NAN: Self = Self::from_bits($format.nan);
             pub const MAX: Self = Self::from_bits($format.max);
+            pub const MIN: Self = Self::from_bits($format.max | 0x80);
+            pub const MIN_POSITIVE: Self = Self::from_bits(1 << $format.frac);
+            pub const MIN_EXPONENT: i32 = 1 - ($format.bias as i32);
+            pub const MAX_EXPONENT: i32 = (((1i32 << $format.exp) - 2) - ($format.bias as i32));
+            pub const ZERO: Self = Self::from_bits(0);
+            pub const NEG_ZERO: Self = Self::from_bits(0x80);
+            pub const ONE: Self = Self::from_bits((1 << $format.frac) + $format.bias as u8);
+            pub const NEG_ONE: Self = Self::from_bits(0x80 | (($format.bias as u8) << $format.frac));
 
             #[inline(always)]
             pub const fn from_bits(bits: u8) -> Self {
@@ -91,8 +99,36 @@ macro_rules! impl_float8 {
             }
 
             #[inline]
-            pub const fn is_sign_positive(&self) -> bool {
+            pub const fn is_sign_positive(self) -> bool {
                 self.0 & 0x80u8 == 0
+            }
+
+            #[inline]
+            pub const fn signum(self) -> Self {
+                if self.is_nan() {
+                    Self::NAN
+                } else if self.0 & 0x7f == 0 {
+                    self
+                } else if self.0 & 0x80 != 0 {
+                    Self::NEG_ONE
+                } else {
+                    Self::ONE
+                }
+            }
+
+            #[inline]
+            pub const fn abs(self) -> Self {
+                Self::from_bits(self.0 & 0x7f)
+            }
+
+            #[inline]
+            pub const fn is_sign_negative(self) -> bool {
+                self.0 & 0x80 != 0
+            }
+
+            #[inline]
+            pub const fn copysign(self, sign: Self) -> Self {
+                Self::from_bits((self.0 & 0x7f) | (sign.0 & 0x80))
             }
 
             #[inline]
@@ -312,11 +348,10 @@ macro_rules! impl_float8 {
     };
 }
 
-use crate::float::format::{E4M3, E4M3FN, E4M3FNUZ, E5M2, E5M2FN, E5M2FNUZ};
+use crate::float::format::{E4M3, E4M3FN, E4M3FNUZ, E5M2, E5M2FNUZ};
 
 impl_float8!(hf8, E4M3);
 impl_float8!(hf8fn, E4M3FN);
 impl_float8!(hf8uz, E4M3FNUZ);
 impl_float8!(bf8, E5M2);
-impl_float8!(bf8fn, E5M2FN);
 impl_float8!(bf8uz, E5M2FNUZ);

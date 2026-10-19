@@ -22,8 +22,8 @@ pub const E4M3: FloatFormat8 = FloatFormat8 {
     exp: 4,
     frac: 3,
     bias: 7,
-    max: 0x7e,
-    nan: 0x7f,
+    max: 0x77,
+    nan: 0x7c,
     inf: Some(0x78),
 };
 
@@ -52,15 +52,6 @@ pub const E5M2: FloatFormat8 = FloatFormat8 {
     max: 0x7b,
     nan: 0x7f,
     inf: Some(0x7c),
-};
-
-pub const E5M2FN: FloatFormat8 = FloatFormat8 {
-    exp: 5,
-    frac: 2,
-    bias: 15,
-    max: 0x7f,
-    nan: 0x7f,
-    inf: None,
 };
 
 pub const E5M2FNUZ: FloatFormat8 = FloatFormat8 {
