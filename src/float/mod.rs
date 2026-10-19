@@ -4,7 +4,14 @@ macro_rules! impl_float8 {
     ($name:ident, $format:ident$(,)?) => {
         #[doc = concat!("8-bit floating point value with the ", stringify!($format), " format")]
         #[derive(Clone, Copy, Default)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize))]
+        #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
+        #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
+        #[repr(transparent)]
         pub struct $name(u8);
+
+        #[cfg(feature = "briny")]
+        unsafe impl Pod for $name {}
 
         impl $name {
             pub const NAN: Self = Self::from_bits($format.nan);
@@ -15,12 +22,80 @@ macro_rules! impl_float8 {
                 Self(bits)
             }
 
-            #[inline(always)]
+            #[inline]
             pub const fn to_bits(self) -> u8 {
                 self.0
             }
 
-            #[inline(always)]
+            /// Returns `true` if this value is NaN and `false` otherwise.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            ///
+            #[doc = concat!("let nan = ", stringify!($name), "::NAN;")]
+            #[doc = concat!("let f = ", stringify!($name), "::from_f32(7.0f32);")]
+            ///
+            /// assert!(nan.is_nan());
+            /// assert!(!f.is_nan());
+            /// ```
+            #[inline]
+            pub const fn is_nan(self) -> bool {
+                if const { $format.inf.is_some() } {
+                    self.0 & 0x7f == $format.nan
+                } else if const { $format.nan == 0x7f } {
+                    self.0 == 0x7f || self.0 == 0xff
+                } else {
+                    self.0 == $format.nan
+                }
+            }
+
+            /// Returns `true` if this value is ±∞ and `false` otherwise.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            ///
+            #[doc = concat!("let f = ", stringify!($name), "::from_f32(7.0f32);")]
+            #[doc = concat!("let nan = ", stringify!($name), "::NAN;")]
+            ///
+            /// assert!(!f.is_infinite());
+            /// assert!(!nan.is_infinite());
+            /// ```
+            #[inline]
+            pub const fn is_infinite(self) -> bool {
+                match $format.inf {
+                    Some(inf) => self.0 & 0x7f == inf,
+                    None => false,
+                }
+            }
+
+            /// Returns true if this number is neither infinite nor NaN.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            ///
+            #[doc = concat!("let f = ", stringify!($name), "::from_f32(7.0f32);")]
+            #[doc = concat!("let nan = ", stringify!($name), "::NAN;")]
+            ///
+            /// assert!(f.is_finite());
+            /// assert!(!nan.is_finite());
+            /// ```
+            #[inline]
+            pub const fn is_finite(self) -> bool {
+                !(self.is_infinite() || self.is_nan())
+            }
+
+            #[inline]
+            pub const fn is_sign_positive(&self) -> bool {
+                self.0 & 0x80u8 == 0
+            }
+
+            #[inline]
             pub const fn from_f32(x: f32) -> Self {
                 Self($crate::bit::float8::from_f32::<
                     { $format.frac },
@@ -28,28 +103,39 @@ macro_rules! impl_float8 {
                     { $format.bias },
                     { $format.max },
                     { $format.nan },
-                    { match $format.inf {
-                        Some(v) => v,
-                        None => $crate::bit::float8::NO_INF,
-                    } },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                 >(x))
             }
 
-            #[inline(always)]
+            /// Converts this type into a [`f32`] type.
+            ///
+            /// This operation may be lossy.
+            ///
+            /// - NaN and zero values are preserved.
+            /// - Subnormal values are normalized.
+            /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            #[inline]
             pub const fn to_f32(self) -> f32 {
                 $crate::bit::float8::to_f32::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
                     { $format.nan },
-                    { match $format.inf {
-                        Some(v) => v,
-                        None => $crate::bit::float8::NO_INF,
-                    } },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                 >(self.0)
             }
 
-            #[inline(always)]
+            #[inline]
             pub const fn from_f64(x: f64) -> Self {
                 Self($crate::bit::float8::from_f64::<
                     { $format.frac },
@@ -57,27 +143,39 @@ macro_rules! impl_float8 {
                     { $format.bias },
                     { $format.max },
                     { $format.nan },
-                    { match $format.inf {
-                        Some(v) => v,
-                        None => $crate::bit::float8::NO_INF,
-                    } },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                 >(x))
             }
 
-            #[inline(always)]
+            /// Converts this type into a [`f64`] type.
+            ///
+            /// This operation may be lossy.
+            ///
+            /// - NaN and zero values are preserved.
+            /// - Subnormal values are normalized.
+            /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            #[inline]
             pub const fn to_f64(self) -> f64 {
                 $crate::bit::float8::to_f64::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
                     { $format.nan },
-                    { match $format.inf {
-                        Some(v) => v,
-                        None => $crate::bit::float8::NO_INF,
-                    } },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                 >(self.0)
             }
 
+            #[inline]
             pub const fn add_const(self, rhs: Self) -> Self {
                 Self($crate::bit::float8::addsub::<
                     { $format.frac },
@@ -85,14 +183,17 @@ macro_rules! impl_float8 {
                     { $format.bias },
                     { $format.max },
                     { $format.nan },
-                    { match $format.inf {
-                        Some(v) => v,
-                        None => $crate::bit::float8::NO_INF,
-                    } },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                     false,
                 >(self.0, rhs.0))
             }
 
+            #[inline]
             pub const fn sub_const(self, rhs: Self) -> Self {
                 Self($crate::bit::float8::addsub::<
                     { $format.frac },
@@ -100,34 +201,74 @@ macro_rules! impl_float8 {
                     { $format.bias },
                     { $format.max },
                     { $format.nan },
-                    { match $format.inf {
-                        Some(v) => v,
-                        None => $crate::bit::float8::NO_INF,
-                    } },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                     true,
+                >(self.0, rhs.0))
+            }
+
+            #[inline]
+            pub const fn mul_const(self, rhs: Self) -> Self {
+                Self($crate::bit::float8::mul::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            #[inline]
+            pub const fn div_const(self, rhs: Self) -> Self {
+                Self($crate::bit::float8::div::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
                 >(self.0, rhs.0))
             }
         }
 
         impl From<f32> for $name {
+            #[inline]
             fn from(val: f32) -> Self {
                 Self::from_f32(val)
             }
         }
 
         impl From<f64> for $name {
+            #[inline]
             fn from(val: f64) -> Self {
                 Self::from_f64(val)
             }
         }
 
         impl From<$name> for f32 {
+            #[inline]
             fn from(val: $name) -> Self {
                 val.to_f32()
             }
         }
 
         impl From<$name> for f64 {
+            #[inline]
             fn from(val: $name) -> Self {
                 val.to_f64()
             }
@@ -136,6 +277,7 @@ macro_rules! impl_float8 {
         impl ::core::ops::Add for $name {
             type Output = Self;
 
+            #[inline]
             fn add(self, rhs: Self) -> Self {
                 self.add_const(rhs)
             }
@@ -144,8 +286,27 @@ macro_rules! impl_float8 {
         impl ::core::ops::Sub for $name {
             type Output = Self;
 
+            #[inline]
             fn sub(self, rhs: Self) -> Self {
                 self.sub_const(rhs)
+            }
+        }
+
+        impl ::core::ops::Mul for $name {
+            type Output = Self;
+
+            #[inline]
+            fn mul(self, rhs: Self) -> Self {
+                self.mul_const(rhs)
+            }
+        }
+
+        impl ::core::ops::Div for $name {
+            type Output = Self;
+
+            #[inline]
+            fn div(self, rhs: Self) -> Self {
+                self.div_const(rhs)
             }
         }
     };

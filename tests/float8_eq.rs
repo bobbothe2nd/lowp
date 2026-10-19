@@ -74,6 +74,78 @@ fn check_hf8_sub() {
 }
 
 #[test]
+fn check_hf8_mul() {
+    let mut failures = 0;
+
+    for a in 0u16..=255 {
+        for b in 0u16..=255 {
+            let a = a as u8;
+            let b = b as u8;
+
+            let ref_mul = {
+                let x = F8E4M3::from_bits(a);
+                let y = F8E4M3::from_bits(b);
+
+                (x * y).to_bits()
+            };
+
+            let soft_mul = {
+                let x = hf8fn::from_bits(a);
+                let y = hf8fn::from_bits(b);
+
+                (x * y).to_bits()
+            };
+
+            if ref_mul != soft_mul {
+                if failures < 20 {
+                    println!("mismatch: {a:02x} * {b:02x}: soft={soft_mul:02x}, ref={ref_mul:02x}");
+                }
+                failures += 1;
+            }
+        }
+    }
+
+    println!("mismatches: {failures}");
+    assert_eq!(failures, 0);
+}
+
+#[test]
+fn check_hf8_div() {
+    let mut failures = 0;
+
+    for a in 0u16..=255 {
+        for b in 0u16..=255 {
+            let a = a as u8;
+            let b = b as u8;
+
+            let ref_div = {
+                let x = F8E4M3::from_bits(a);
+                let y = F8E4M3::from_bits(b);
+
+                (x / y).to_bits()
+            };
+
+            let soft_div = {
+                let x = hf8fn::from_bits(a);
+                let y = hf8fn::from_bits(b);
+
+                (x / y).to_bits()
+            };
+
+            if ref_div != soft_div {
+                if failures < 20 {
+                    println!("mismatch: {a:02x} / {b:02x}: soft={soft_div:02x}, ref={ref_div:02x}");
+                }
+                failures += 1;
+            }
+        }
+    }
+
+    println!("mismatches: {failures}");
+    assert_eq!(failures, 0);
+}
+
+#[test]
 fn check_hf8_to_f32() {
     let mut failures = 0;
 
@@ -83,9 +155,7 @@ fn check_hf8_to_f32() {
         let reference = F8E4M3::from_bits(bits).to_f32();
         let soft = hf8fn::from_bits(bits).to_f32();
 
-        if reference.to_bits() != soft.to_bits()
-            && !(reference.is_nan() && soft.is_nan())
-        {
+        if reference.to_bits() != soft.to_bits() && !(reference.is_nan() && soft.is_nan()) {
             if failures < 20 {
                 println!(
                     "to_f32 mismatch: {bits:02x}: \
@@ -112,9 +182,7 @@ fn check_hf8_to_f64() {
         let reference = F8E4M3::from_bits(bits).to_f64();
         let soft = hf8fn::from_bits(bits).to_f64();
 
-        if reference.to_bits() != soft.to_bits()
-            && !(reference.is_nan() && soft.is_nan())
-        {
+        if reference.to_bits() != soft.to_bits() && !(reference.is_nan() && soft.is_nan()) {
             if failures < 20 {
                 println!(
                     "to_f64 mismatch: {bits:02x}: \

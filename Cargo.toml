@@ -4,7 +4,21 @@ description = "Lightweight software floats for low-precision formats"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+serde = ["dep:serde"]
+briny = ["dep:briny"]
+half = ["dep:half", "briny/half"]
+bytemuck = ["dep:bytemuck"]
+zerocopy = ["dep:zerocopy"]
+num-traits = ["dep:num-traits"]
+
 [dependencies]
+half = { version = "2.4.1", default-features = false, optional = true }
+briny = { version = "0.14.0", default-features = false, optional = true }
+bytemuck = { version = "1.4.1", default-features = false, features = ["derive"], optional = true }
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+num-traits = { version = "0.2.14", default-features = false, features = ["libm"], optional = true }
+zerocopy = { version = "0.6.0", default-features = false, optional = true }
 
 [dev-dependencies]
 criterion = "0.5"
