@@ -45,7 +45,11 @@ pub const fn from_f32<
     let src_exp = (bits & EXP32_MASK) >> 23;
     let src_frac = bits & FRAC32_MASK;
 
-    let max_exp = (1u32 << E) - 1;
+    let max_exp = if const { INF != NO_INF } {
+        (1u32 << E) - 2
+    } else {
+        (1u32 << E) - 1
+    };
     let max_sig = (1u32 << (F + 1)) - 1;
 
     if src_exp == 0xff {
@@ -98,7 +102,7 @@ pub const fn from_f32<
     let target_exp = exponent + B as i32;
 
     if target_exp > max_exp as i32 {
-        return sign | MAX;
+        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     let shift = 23 - F;
@@ -117,7 +121,7 @@ pub const fn from_f32<
     }
 
     if target_exp == max_exp as i32 && sig >= max_sig as u64 {
-        return sign | MAX;
+        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
@@ -142,7 +146,11 @@ pub const fn from_f64<
     let src_exp = ((bits & EXP64_MASK) >> 52) as u32;
     let src_frac = bits & FRAC64_MASK;
 
-    let max_exp = (1u32 << E) - 1;
+    let max_exp = if const { INF != NO_INF } {
+        (1u32 << E) - 2
+    } else {
+        (1u32 << E) - 1
+    };
     let max_sig = (1u32 << (F + 1)) - 1;
 
     if src_exp == 0x7ff {
@@ -194,7 +202,7 @@ pub const fn from_f64<
     let target_exp = exponent + (B as i32);
 
     if target_exp > max_exp as i32 {
-        return sign | MAX;
+        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     let mut sig = round_shift_u64(mantissa, const { 52 - F } as u32);
@@ -211,7 +219,7 @@ pub const fn from_f64<
     }
 
     if target_exp == max_exp as i32 && sig >= max_sig as u64 {
-        return sign | MAX;
+        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
@@ -236,6 +244,10 @@ pub const fn to_f32<const F: u8, const E: u8, const B: i8, const NAN: u8, const 
     let frac_mask = const { 1u8 << F } - 1;
     let exp = (abs >> F) & exp_mask;
     let frac = abs & frac_mask;
+
+    if const { INF != NO_INF } && exp == exp_mask && frac != 0 {
+        return f32::NAN;
+    }
 
     if exp == 0 && frac == 0 {
         return f32::from_bits(sign);
@@ -282,6 +294,10 @@ pub const fn to_f64<const F: u8, const E: u8, const B: i8, const NAN: u8, const 
     let frac_mask = const { 1u8 << F } - 1;
     let exp = (abs >> F) & exp_mask;
     let frac = abs & frac_mask;
+
+    if const { INF != NO_INF } && exp == exp_mask && frac != 0 {
+        return f64::NAN;
+    }
 
     if exp == 0 && frac == 0 {
         return f64::from_bits(sign);
@@ -538,7 +554,11 @@ pub const fn mul<
         return sign | sig as u8;
     }
 
-    let max_exp = (1u32 << E) - 1;
+    let max_exp = if const { INF != NO_INF } {
+        (1u32 << E) - 2
+    } else {
+        (1u32 << E) - 1
+    };
 
     let product_hi = 63 - product.leading_zeros();
     let mut target_exp = product_hi as i32 + power;
@@ -720,7 +740,11 @@ pub const fn div<
         target_exp += 1;
     }
 
-    let max_exp = (1u32 << E) - 1;
+    let max_exp = if const { INF != NO_INF } {
+        (1u32 << E) - 2
+    } else {
+        (1u32 << E) - 1
+    };
     let encoded_exp = target_exp + B as i32;
 
     if encoded_exp > max_exp as i32 {

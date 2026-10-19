@@ -23,7 +23,8 @@ macro_rules! impl_float8 {
             pub const ZERO: Self = Self::from_bits(0);
             pub const NEG_ZERO: Self = Self::from_bits(0x80);
             pub const ONE: Self = Self::from_bits((1 << $format.frac) + $format.bias as u8);
-            pub const NEG_ONE: Self = Self::from_bits(0x80 | (($format.bias as u8) << $format.frac));
+            pub const NEG_ONE: Self =
+                Self::from_bits(0x80 | (($format.bias as u8) << $format.frac));
 
             #[inline(always)]
             pub const fn from_bits(bits: u8) -> Self {
@@ -50,6 +51,7 @@ macro_rules! impl_float8 {
             /// ```
             #[inline]
             pub const fn is_nan(self) -> bool {
+                #[allow(clippy::bad_bit_mask)]
                 if const { $format.inf.is_some() } {
                     self.0 & 0x7f == $format.nan
                 } else if const { $format.nan == 0x7f } {
