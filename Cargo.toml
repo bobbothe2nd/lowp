@@ -5,6 +5,8 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
+default = ["num-traits"]
+
 serde = ["dep:serde"]
 briny = ["dep:briny"]
 half = ["dep:half", "briny/half"]
