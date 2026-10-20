@@ -1,6 +1,6 @@
 use half::{bf16, f16};
 
-use crate::bit::{SIGN, NO_INF, round_shift_u64};
+use crate::bit::{float8::{SIGN, NO_INF}, round_shift_u64};
 
 #[inline(always)]
 pub const fn f8_from_f16<

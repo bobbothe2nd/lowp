@@ -1,4 +1,38 @@
-use super::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64, SIGN, NO_INF, round_shift_u64, decode_finite, is_nan};
+use super::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64, round_shift_u64};
+
+pub const NO_INF: u8 = 0xff;
+pub const SIGN: u8 = 0x80;
+
+#[inline(always)]
+pub const fn is_nan<const F: u8, const E: u8, const NAN: u8, const INF: u8>(
+    x: u8,
+) -> bool {
+    if const { INF != NO_INF } {
+        let exp_mask = const { (1u8 << E) - 1 };
+        let frac_mask = const { (1u8 << F) - 1 };
+        let exp = (x >> F) & exp_mask;
+        let frac = x & frac_mask;
+
+        exp == exp_mask && frac != 0
+    } else if const { NAN == 0x7f } {
+        x == 0x7f || x == 0xff
+    } else {
+        x == NAN
+    }
+}
+
+#[inline(always)]
+const fn decode_finite<const F: u8, const E: u8>(x: u8) -> i64 {
+    let frac_mask = const { 1u8 << F } - 1;
+    let e = (x >> F) & (const { 1u8 << E } - 1);
+    let frac = x & frac_mask;
+
+    if e == 0 {
+        frac as i64
+    } else {
+        (const { 1 << F } + frac as i64) << (e - 1)
+    }
+}
 
 #[inline(always)]
 pub const fn from_f32<

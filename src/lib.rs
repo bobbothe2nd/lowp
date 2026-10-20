@@ -7,6 +7,8 @@
 //! * [`bf8`]: 5-bit exponent, 2-bit mantissa, signed zero, infinities
 //! * [`bf8uz`]: 5-bit exponent, 2-bit mantissa, unsigned zero, finite
 
+#![no_std]
+
 #![forbid(missing_docs)]
 #![allow(non_camel_case_types)]
 

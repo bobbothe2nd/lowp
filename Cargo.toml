@@ -24,6 +24,7 @@ num-traits = { version = "0.2.14", default-features = false, features = ["libm"]
 
 [dev-dependencies]
 criterion = "0.5"
+float4 = "0.2.0"
 float8 = "0.7"
 
 [[bench]]
