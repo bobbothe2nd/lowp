@@ -1,6 +1,6 @@
 use half::{bf16, f16};
 
-use crate::bit::{SIGN, float8::NO_INF, round_shift_u64};
+use crate::bit::{SIGN, NO_INF, round_shift_u64};
 
 #[inline(always)]
 pub const fn f8_from_f16<
@@ -31,7 +31,7 @@ pub const fn f8_from_f16<
 
     if src_exp == 0x1f {
         if src_frac != 0 {
-            return MAX;
+            return NAN;
         }
 
         return if const { INF == NO_INF } {
@@ -97,10 +97,6 @@ pub const fn f8_from_f16<
         let encoded = ((target_exp + 1) as u8) << F;
 
         return sign | encoded | (sig as u8 & ((1 << F) - 1));
-    }
-
-    if target_exp == max_exp as i32 && sig >= max_sig as u64 {
-        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
@@ -186,7 +182,7 @@ pub const fn f8_from_bf16<
 
     if src_exp == 0xff {
         if src_frac != 0 {
-            return MAX;
+            return NAN;
         }
 
         return if const { INF == NO_INF } {
@@ -251,10 +247,6 @@ pub const fn f8_from_bf16<
         let encoded = ((target_exp + 1) as u8) << F;
 
         return sign | encoded | (sig as u8 & ((1 << F) - 1));
-    }
-
-    if target_exp == max_exp as i32 && sig >= max_sig as u64 {
-        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))

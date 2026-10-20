@@ -1,8 +1,4 @@
-use crate::bit::SIGN;
-
-use super::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64, round_shift_u64};
-
-pub const NO_INF: u8 = 0xff;
+use super::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64, SIGN, NO_INF, round_shift_u64, decode_finite, is_nan};
 
 #[inline(always)]
 pub const fn from_f32<
@@ -98,10 +94,6 @@ pub const fn from_f32<
         return sign | encoded | (sig as u8 & ((1 << F) - 1));
     }
 
-    if target_exp == max_exp as i32 && sig >= max_sig as u64 {
-        return sign | if const { INF == NO_INF } { MAX } else { INF };
-    }
-
     sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
 }
 
@@ -194,10 +186,6 @@ pub const fn from_f64<
 
         let encoded = ((target_exp + 1) as u8) << F;
         return sign | encoded | (sig as u8 & ((1 << F) - 1));
-    }
-
-    if target_exp == max_exp as i32 && sig >= max_sig as u64 {
-        return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
     sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
@@ -304,19 +292,6 @@ pub const fn to_f64<const F: u8, const E: u8, const B: i8, const NAN: u8, const 
 }
 
 #[inline(always)]
-const fn decode_finite<const F: u8, const E: u8>(abs: u8) -> i32 {
-    let frac_mask = const { 1u8 << F } - 1;
-    let e = (abs >> F) & (const { 1u8 << E } - 1);
-    let frac = abs & frac_mask;
-
-    if e == 0 {
-        frac as i32
-    } else {
-        (const { 1i32 << F } + frac as i32) << (e - 1)
-    }
-}
-
-#[inline(always)]
 pub const fn addsub<
     const F: u8,
     const E: u8,
@@ -329,7 +304,7 @@ pub const fn addsub<
     a: u8,
     b: u8,
 ) -> u8 {
-    if const { NAN == SIGN } && (a == NAN || b == NAN) {
+    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
         return NAN;
     }
 
@@ -350,10 +325,6 @@ pub const fn addsub<
 
             return if a_inf { a } else { b ^ ((SUB as u8) << 7) };
         }
-    }
-
-    if (NAN != SIGN) && (a_abs == NAN || b_abs == NAN) {
-        return NAN;
     }
 
     if a_abs == 0 {
@@ -445,16 +416,12 @@ pub const fn mul<
     a: u8,
     b: u8,
 ) -> u8 {
-    if const { NAN == SIGN } && (a == NAN || b == NAN) {
+    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
         return NAN;
     }
 
     let a_abs = a & !SIGN;
     let b_abs = b & !SIGN;
-
-    if const { NAN != SIGN } && (a_abs == NAN || b_abs == NAN) {
-        return NAN;
-    }
 
     let sa = a & SIGN;
     let sb = b & SIGN;
@@ -593,16 +560,12 @@ pub const fn div<
     a: u8,
     b: u8,
 ) -> u8 {
-    if const { NAN == SIGN } && (a == NAN || b == NAN) {
+    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
         return NAN;
     }
 
     let a_abs = a & !SIGN;
     let b_abs = b & !SIGN;
-
-    if const { NAN != SIGN } && (a_abs == NAN || b_abs == NAN) {
-        return NAN;
-    }
 
     let sign = (a ^ b) & SIGN;
 
@@ -631,11 +594,7 @@ pub const fn div<
             return const { SIGN | NAN };
         }
 
-        return if const { INF != NO_INF } {
-            sign | INF
-        } else {
-            sign | MAX
-        };
+        return sign | MAX;
     }
 
     if a_zero {

@@ -104,7 +104,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -127,7 +127,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -153,7 +153,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -176,7 +176,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -196,14 +196,17 @@ macro_rules! impl_float8 {
             /// ```
             #[inline]
             pub const fn is_nan(self) -> bool {
-                #[allow(clippy::bad_bit_mask)]
-                if const { $format.inf.is_some() } {
-                    self.0 & 0x7f == $format.nan
-                } else if const { $format.nan == 0x7f } {
-                    self.0 == 0x7f || self.0 == 0xff
-                } else {
-                    self.0 == $format.nan
-                }
+                $crate::bit::is_nan::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0)
             }
 
             /// Returns `true` if this value is ±∞ and `false` otherwise.
@@ -506,7 +509,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                     false,
@@ -525,7 +528,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                     true,
@@ -544,7 +547,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0, rhs.0))
@@ -562,7 +565,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0, rhs.0))
@@ -799,12 +802,12 @@ macro_rules! impl_half_cvt {
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
-                    { $format.nan },
                     { $format.max },
+                    { $format.nan },
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -824,12 +827,12 @@ macro_rules! impl_half_cvt {
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
-                    { $format.nan },
                     { $format.max },
+                    { $format.nan },
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -851,7 +854,7 @@ macro_rules! impl_half_cvt {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -873,7 +876,7 @@ macro_rules! impl_half_cvt {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)

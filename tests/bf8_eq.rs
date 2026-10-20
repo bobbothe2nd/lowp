@@ -257,6 +257,7 @@ fn check_bf8_from_f64() {
 }
 
 #[test]
+#[cfg(feature = "half")]
 fn check_bf8_to_f16() {
     let mut failures = 0;
 
@@ -284,6 +285,7 @@ fn check_bf8_to_f16() {
 }
 
 #[test]
+#[cfg(feature = "half")]
 fn check_bf8_to_bf16() {
     let mut failures = 0;
 
@@ -339,6 +341,7 @@ fn check_bf8_from_f16() {
 }
 
 #[test]
+#[cfg(feature = "half")]
 fn check_bf8_from_bf16() {
     let mut failures = 0;
 
