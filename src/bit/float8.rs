@@ -362,19 +362,19 @@ pub const fn addsub<
     let sign = if sum < 0 { SIGN } else { 0 };
     let q = sum.unsigned_abs();
 
-    if q < const { 1u32 << F } {
+    if q < const { 1 << F } {
         return sign | q as u8;
     }
 
-    let h = 31 - q.leading_zeros();
+    let h = 63 - q.leading_zeros();
     let shift = h - (F as u32);
 
     let mut mantissa = q >> shift;
 
     if shift != 0 {
-        let remainder_mask = (1u32 << shift) - 1;
+        let remainder_mask = (1 << shift) - 1;
         let remainder = q & remainder_mask;
-        let halfway = 1u32 << (shift - 1);
+        let halfway = 1 << (shift - 1);
 
         if remainder > halfway || (remainder == halfway && (mantissa & 1) != 0) {
             mantissa += 1;

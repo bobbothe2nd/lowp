@@ -28,15 +28,15 @@ pub const fn is_nan<const F: u8, const E: u8, const NAN: u8, const INF: u8>(
 }
 
 #[inline(always)]
-const fn decode_finite<const F: u8, const E: u8>(x: u8) -> i32 {
+const fn decode_finite<const F: u8, const E: u8>(x: u8) -> i64 {
     let frac_mask = const { 1u8 << F } - 1;
     let e = (x >> F) & (const { 1u8 << E } - 1);
     let frac = x & frac_mask;
 
     if e == 0 {
-        frac as i32
+        frac as i64
     } else {
-        (const { 1i32 << F } + frac as i32) << (e - 1)
+        (const { 1 << F } + frac as i64) << (e - 1)
     }
 }
 
