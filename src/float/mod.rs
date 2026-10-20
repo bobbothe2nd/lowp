@@ -11,7 +11,7 @@ macro_rules! impl_float8 {
         pub struct $name(u8);
 
         #[cfg(feature = "briny")]
-        unsafe impl Pod for $name {}
+        unsafe impl briny::traits::Pod for $name {}
 
         impl PartialEq for $name {
             #[inline]
@@ -116,7 +116,7 @@ macro_rules! impl_float8 {
             ///
             /// - NaN and zero values are preserved.
             /// - Subnormal values are normalized.
-            /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            /// - Otherwise, the values are mapped to the appropriate 32-bit value.
             #[inline]
             pub const fn to_f32(self) -> f32 {
                 $crate::bit::float8::to_f32::<
@@ -165,7 +165,7 @@ macro_rules! impl_float8 {
             ///
             /// - NaN and zero values are preserved.
             /// - Subnormal values are normalized.
-            /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            /// - Otherwise, the values are mapped to the appropriate 64-bit value.
             #[inline]
             pub const fn to_f64(self) -> f64 {
                 $crate::bit::float8::to_f64::<
@@ -682,7 +682,7 @@ impl bf8 {
 }
 
 macro_rules! impl_constants {
-    ($t:ident) => {
+    ($t:ty) => {
         impl $t {
             /// π
             pub const PI: Self = Self::from_f64(::core::f64::consts::PI);
@@ -780,3 +780,136 @@ impl_io!(hf8fn);
 impl_io!(hf8uz);
 impl_io!(bf8);
 impl_io!(bf8uz);
+
+#[cfg(feature = "half")]
+macro_rules! impl_half_cvt {
+    ($t:ident $format:ident) => {
+        impl $t {
+            /// Convert a [`struct@f16`] type into [`Self`].
+            ///
+            /// This operation is lossy.
+            ///
+            /// - If the 16-bit value is to large to fit in 8-bits, ±∞ will result.
+            /// - NaN values are preserved.
+            /// - 16-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
+            /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
+            /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            pub const fn from_f16(x: ::half::f16) -> Self {
+                Self($crate::bit::half::f8_from_f16::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.nan },
+                    { $format.max },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(x))
+            }
+
+            /// Convert a [`struct@bf16`] type into [`Self`].
+            ///
+            /// This operation is lossy.
+            ///
+            /// - If the 16-bit value is to large to fit in 8-bits, ±∞ will result.
+            /// - NaN values are preserved.
+            /// - 16-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
+            /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
+            /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            pub const fn from_bf16(x: ::half::bf16) -> Self {
+                Self($crate::bit::half::f8_from_bf16::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.nan },
+                    { $format.max },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(x))
+            }
+
+            /// Converts this type into a [`struct@f16`] type.
+            ///
+            /// This operation may be lossy.
+            ///
+            /// - NaN and zero values are preserved.
+            /// - Subnormal values are normalized.
+            /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            pub const fn to_f16(self) -> ::half::f16 {
+                crate::bit::half::f8_to_f16::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(self.0)
+            }
+
+            /// Converts this type into a [`struct@bf16`] type.
+            ///
+            /// This operation may be lossy.
+            ///
+            /// - NaN and zero values are preserved.
+            /// - Subnormal values are normalized.
+            /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            pub const fn to_bf16(self) -> ::half::bf16 {
+                crate::bit::half::f8_to_bf16::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(self.0)
+            }
+        }
+
+        impl From<::half::f16> for $t {
+            fn from(x: ::half::f16) -> Self {
+                Self::from_f16(x)
+            }
+        }
+        impl From<::half::bf16> for $t {
+            fn from(x: ::half::bf16) -> Self {
+                Self::from_bf16(x)
+            }
+        }
+        impl From<$t> for ::half::f16 {
+            fn from(x: $t) -> Self {
+                x.to_f16()
+            }
+        }
+        impl From<$t> for ::half::bf16 {
+            fn from(x: $t) -> Self {
+                x.to_bf16()
+            }
+        }
+    };
+}
+
+#[cfg(feature = "half")]
+impl_half_cvt!(hf8 E4M3);
+#[cfg(feature = "half")]
+impl_half_cvt!(hf8fn E4M3FN);
+#[cfg(feature = "half")]
+impl_half_cvt!(hf8uz E4M3FNUZ);
+#[cfg(feature = "half")]
+impl_half_cvt!(bf8 E5M2);
+#[cfg(feature = "half")]
+impl_half_cvt!(bf8uz E5M2FNUZ);

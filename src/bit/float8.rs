@@ -1,30 +1,8 @@
-use crate::bit::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64};
+use crate::bit::SIGN;
+
+use super::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64, round_shift_u64};
 
 pub const NO_INF: u8 = 0xff;
-
-const SIGN: u8 = 0x80;
-
-#[inline(always)]
-const fn round_shift_u64(x: u64, shift: u32) -> u64 {
-    if shift == 0 {
-        return x;
-    }
-
-    if shift >= 64 {
-        return 0;
-    }
-
-    let truncated = x >> shift;
-    let remainder_mask = (1u64 << shift) - 1;
-    let remainder = x & remainder_mask;
-    let halfway = 1u64 << (shift - 1);
-
-    if remainder > halfway || (remainder == halfway && (truncated & 1) != 0) {
-        truncated + 1
-    } else {
-        truncated
-    }
-}
 
 #[inline(always)]
 pub const fn from_f32<
@@ -229,8 +207,8 @@ pub const fn from_f64<
 pub const fn to_f32<const F: u8, const E: u8, const B: i8, const NAN: u8, const INF: u8>(
     bits: u8,
 ) -> f32 {
-    let sign = ((bits as u32) & 0x80) << 24;
-    let abs = bits & 0x7f;
+    let sign = ((bits & SIGN) as u32) << 24;
+    let abs = bits & !SIGN;
 
     if const { NAN != SIGN } && abs == NAN {
         return f32::NAN;
@@ -279,8 +257,8 @@ pub const fn to_f32<const F: u8, const E: u8, const B: i8, const NAN: u8, const 
 pub const fn to_f64<const F: u8, const E: u8, const B: i8, const NAN: u8, const INF: u8>(
     bits: u8,
 ) -> f64 {
-    let sign = ((bits as u64) & 0x80) << 56;
-    let abs = bits & 0x7f;
+    let sign = ((bits & SIGN) as u64) << 56;
+    let abs = bits & !SIGN;
 
     if const { NAN != SIGN } && abs == NAN {
         return f64::NAN;
@@ -374,7 +352,7 @@ pub const fn addsub<
         }
     }
 
-    if (NAN != 0x80) && (a_abs == NAN || b_abs == NAN) {
+    if (NAN != SIGN) && (a_abs == NAN || b_abs == NAN) {
         return NAN;
     }
 
