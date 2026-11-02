@@ -461,7 +461,7 @@ macro_rules! lut2 {
     }};
 }
 
-use super::f4_lut::{LUT_ADD, LUT_MUL, LUT_DIV, LUT_SUB};
+use super::f4_lut::{LUT_ADD, LUT_MUL, LUT_DIV, LUT_SUB, LUT_REM};
 
 pub const unsafe fn add(a: u8, b: u8) -> u8 {
     lut2!(a, b, LUT_ADD)
@@ -477,4 +477,8 @@ pub const unsafe fn mul(a: u8, b: u8) -> u8 {
 
 pub const unsafe fn div(a: u8, b: u8) -> u8 {
     lut2!(a, b, LUT_DIV)
+}
+
+pub const unsafe fn rem(a: u8, b: u8) -> u8 {
+    lut2!(a, b, LUT_REM)
 }

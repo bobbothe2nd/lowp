@@ -72,6 +72,7 @@ fn main() -> std::io::Result<()> {
     file.push_str(&generate_lut("LUT_SUB", |a, b| a - b));
     file.push_str(&generate_lut("LUT_MUL", |a, b| a * b));
     file.push_str(&generate_lut("LUT_DIV", |a, b| a / b));
+    file.push_str(&generate_lut("LUT_REM", |a, b| a % b));
 
     fs::write(output, file)
 }

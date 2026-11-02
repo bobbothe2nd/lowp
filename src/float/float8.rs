@@ -70,6 +70,7 @@ macro_rules! impl_float8 {
         #[cfg_attr(feature = "serde", derive(serde::Serialize))]
         #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
         #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
+        #[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
         #[repr(transparent)]
         pub struct $name(u8);
 
@@ -700,6 +701,15 @@ macro_rules! impl_float8 {
             #[inline]
             fn div(self, rhs: Self) -> Self {
                 self.div_const(rhs)
+            }
+        }
+
+        impl ::core::ops::Rem for $name {
+            type Output = Self;
+
+            #[inline]
+            fn rem(self, rhs: Self) -> Self {
+                self.rem_const(rhs)
             }
         }
 

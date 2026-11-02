@@ -50,6 +50,7 @@ impl_constants!(hf8fn);
 impl_constants!(hf8uz);
 impl_constants!(bf8);
 impl_constants!(bf8uz);
+impl_constants!(f4);
 
 macro_rules! impl_io {
     ($t:ident) => {
@@ -219,3 +220,6 @@ pub use float8::*;
 
 mod float4;
 pub use float4::*;
+
+#[cfg(feature = "num-traits")]
+mod num_traits;

@@ -5,11 +5,13 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["num-traits", "half"]
+default = ["num-traits", "half", "auto", "alloc"]
 
+alloc = []
+auto = ["dep:stable_auto"]
 serde = ["dep:serde"]
-briny = ["dep:briny", "half"]
-half = ["dep:half"]
+briny = ["dep:briny"]
+half = ["dep:half", "briny?/half"]
 bytemuck = ["dep:bytemuck"]
 zerocopy = ["dep:zerocopy"]
 num-traits = ["dep:num-traits"]
@@ -21,6 +23,7 @@ bytemuck = { version = "1.4.1", default-features = false, features = ["derive"],
 zerocopy = { version = "0.6.0", default-features = false, optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
 num-traits = { version = "0.2.14", default-features = false, features = ["libm"], optional = true }
+stable_auto = { version = "0.1.2", default-features = false, optional = true }
 
 [dev-dependencies]
 criterion = "0.5"
