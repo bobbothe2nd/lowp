@@ -119,7 +119,8 @@ impl Float for hf8 {
     }
 
     fn mul_add(self, a: Self, b: Self) -> Self {
-        self.fma(a,)
+        // self.fma(a, b)
+        todo!()
     }
 }
 
@@ -127,7 +128,8 @@ impl MulAdd for hf8 {
     type Output = Self;
 
     fn mul_add(self, a: Self, b: Self) -> Self::Output {
-        self.fma(a, b)
+        // self.mul_add(a, b)
+        todo!()
     }
 }
 

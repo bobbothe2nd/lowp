@@ -74,9 +74,6 @@ macro_rules! impl_float8 {
         #[repr(transparent)]
         pub struct $name(u8);
 
-        #[cfg(feature = "briny")]
-        unsafe impl briny::traits::Pod for $name {}
-
         impl PartialEq for $name {
             #[inline]
             fn eq(&self, other: &Self) -> bool {
@@ -619,6 +616,24 @@ macro_rules! impl_float8 {
             #[inline]
             pub const fn div_const(self, rhs: Self) -> Self {
                 Self($crate::bit::float8::div::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            /// `self % rhs`
+            #[inline]
+            pub const fn rem_const(self, rhs: Self) -> Self {
+                Self($crate::bit::float8::rem::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },

@@ -20,10 +20,10 @@ use half::{bf16, f16};
 #[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
 pub struct f4x2(u8);
 
-/// Packs individual [`f4x2`] values into [`f4`] pairs.
+/// Packs individual [`f4`] values into [`f4x2`] pairs.
 ///
 /// If `values.len()` is odd, the last element is paired with
-/// [`f4x2::ZERO`] as padding.
+/// [`f4::ZERO`] as padding.
 ///
 /// # Examples
 ///
@@ -31,9 +31,9 @@ pub struct f4x2(u8);
 /// use lowp::{f4x2, f4, pack, unpack};
 ///
 /// let values = vec![
-///     f4x2::from_f64(1.5),
-///     f4x2::from_f64(-2.0),
-///     f4x2::from_f64(3.0),
+///     f4::from_f64(1.5),
+///     f4::from_f64(-2.0),
+///     f4::from_f64(3.0),
 /// ];
 /// let packed = pack(&values);
 /// assert_eq!(packed.len(), 2); // 3 values → 2 bytes (last padded)
@@ -70,7 +70,7 @@ pub fn pack(values: &[f4]) -> Box<[f4x2]> {
 /// use lowp::{f4x2, f4, unpack};
 ///
 /// let packed = vec![
-///     f4::new(f4x2::from_f64(1.0), f4x2::from_f64(2.0)),
+///     f4x2::new(f4::from_f64(1.0), f4::from_f64(2.0)),
 /// ];
 /// let values = unpack(&packed);
 /// assert_eq!(values.len(), 2);
@@ -88,9 +88,6 @@ pub fn unpack(packed: &[f4x2]) -> Box<[f4]> {
     }
     unsafe { result.assume_init() }
 }
-
-#[cfg(feature = "briny")]
-unsafe impl briny::traits::Pod for f4x2 {}
 
 impl f4x2 {
     /// Construct an 8-bit floating point value from the raw bits.
@@ -136,9 +133,6 @@ impl f4x2 {
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes))]
 #[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
 pub struct f4(u8);
-
-#[cfg(feature = "briny")]
-unsafe impl briny::traits::Layout<u8> for f4 {}
 
 impl f4 {
     /// Maximum possible value
@@ -299,6 +293,12 @@ impl f4 {
     #[inline]
     pub const fn rem_const(self, rhs: Self) -> Self {
         Self(unsafe { float4::rem(self.0, rhs.0) })
+    }
+
+    /// `(self * a) + b`
+    #[inline]
+    pub const fn mul_add(self, a: Self, b: Self) -> Self {
+        Self(unsafe { float4::fma(self.0, a.0, b.0) })
     }
 
     /// `-self`

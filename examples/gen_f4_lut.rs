@@ -24,14 +24,14 @@ const VALUES: [F4E2M1; 16] = [
     F4E2M1::from_bits(0xF),
 ];
 
-fn generate_lut(
+fn gen_lut2(
     name: &str,
     op: impl Fn(f64, f64) -> f64,
 ) -> String {
     let mut out = String::new();
 
     writeln!(out, "#[rustfmt::skip]").unwrap();
-    writeln!(out, "pub const {name}: [u8; 256] = [").unwrap();
+    writeln!(out, "pub static {name}: [u8; 256] = [").unwrap();
 
     for a in 0..16 {
         for b in 0..16 {
@@ -45,6 +45,38 @@ fn generate_lut(
                 "    0x{:X}, // (0x{a:X}, 0x{b:X})",
                 result.to_bits(),
             ).unwrap();
+        }
+    }
+
+    writeln!(out, "];").unwrap();
+
+    out
+}
+
+fn gen_lut3(
+    name: &str,
+    op: impl Fn(f64, f64, f64) -> f64,
+) -> String {
+    let mut out = String::new();
+
+    writeln!(out, "#[rustfmt::skip]").unwrap();
+    writeln!(out, "pub static {name}: [u8; 4096] = [").unwrap();
+
+    for a in 0..16 {
+        for b in 0..16 {
+            for c in 0..16 {
+                let af = VALUES[a].to_f64();
+                let bf = VALUES[b].to_f64();
+                let cf = VALUES[c].to_f64();
+
+                let result = F4E2M1::from_f64(op(af, bf, cf));
+
+                writeln!(
+                    out,
+                    "    0x{:X}, // (0x{a:X}, 0x{b:X}, 0x{c:X})",
+                    result.to_bits(),
+                ).unwrap();
+            }
         }
     }
 
@@ -68,11 +100,12 @@ fn main() -> std::io::Result<()> {
          //! Indexing: `(a << 4) | b`.\n\n",
     );
 
-    file.push_str(&generate_lut("LUT_ADD", |a, b| a + b));
-    file.push_str(&generate_lut("LUT_SUB", |a, b| a - b));
-    file.push_str(&generate_lut("LUT_MUL", |a, b| a * b));
-    file.push_str(&generate_lut("LUT_DIV", |a, b| a / b));
-    file.push_str(&generate_lut("LUT_REM", |a, b| a % b));
+    file.push_str(&gen_lut2("LUT_ADD", |a, b| a + b));
+    file.push_str(&gen_lut2("LUT_SUB", |a, b| a - b));
+    file.push_str(&gen_lut2("LUT_MUL", |a, b| a * b));
+    file.push_str(&gen_lut2("LUT_DIV", |a, b| a / b));
+    file.push_str(&gen_lut2("LUT_REM", |a, b| a % b));
+    file.push_str(&gen_lut3("LUT_FMA", |a, b, c| a.mul_add(b, c)));
 
     fs::write(output, file)
 }
