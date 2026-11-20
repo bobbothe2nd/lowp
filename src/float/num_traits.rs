@@ -1,9 +1,11 @@
 use core::num::FpCategory;
 
 use num_traits::{
-    float::FloatCore, AsPrimitive, ConstOne, ConstZero, Float, FloatConst, MulAdd, Num, NumCast,
-    One, ToPrimitive, Zero,
+    AsPrimitive, Bounded, ConstOne, ConstZero, FloatConst, MulAdd, Num, NumCast, One, ToPrimitive, Zero, float::{FloatCore, TotalOrder},
 };
+
+#[cfg(any(feature = "std", feature = "libm"))]
+use num_traits::float::Float;
 
 macro_rules! thin_op {
     ($trait:ident $ret:ident $($name:ident)*) => {$(
@@ -23,6 +25,16 @@ macro_rules! const_fn {
 
 macro_rules! impl_num_traits {
     ($ty:ident) => {
+        impl Bounded for crate::$ty {
+            fn max_value() -> Self {
+                Self::MAX
+            }
+
+            fn min_value() -> Self {
+                Self::MIN
+            }
+        }
+
         impl FloatConst for $crate::$ty {
             const_fn!(
                 E
@@ -202,17 +214,18 @@ macro_rules! impl_float {
             }
 
             thin_op!(
-                Float Self
+                FloatCore Self
                 to_degrees to_radians
             );
 
-            thin_op!(Float FpCategory classify);
+            thin_op!(FloatCore FpCategory classify);
 
             fn integer_decode(self) -> (u64, i16, i8) {
-                Float::integer_decode(self.to_f32())
+                FloatCore::integer_decode(self.to_f32())
             }
         }
 
+        #[cfg(any(feature = "std", feature = "libm"))]
         impl Float for $crate::$ty {
             fn infinity() -> Self {
                 Self::INFINITY
@@ -328,3 +341,19 @@ macro_rules! impl_float {
 
 impl_float!(hf8);
 impl_float!(bf8);
+
+macro_rules! impl_nan {
+    ($ty:ident) => {
+        impl TotalOrder for crate::$ty {
+            fn total_cmp(&self, other: &Self) -> core::cmp::Ordering {
+                self.total_cmp(other)
+            }
+        }
+    };
+}
+
+impl_nan!(hf8);
+impl_nan!(hf8fn);
+impl_nan!(hf8uz);
+impl_nan!(bf8);
+impl_nan!(bf8uz);

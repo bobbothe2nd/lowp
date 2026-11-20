@@ -9,9 +9,11 @@ documentation = "https://docs.rs/lowp"
 repository = "https://github.com/bobbothe2nd/lowp"
 
 [features]
-default = ["num-traits", "half", "stable_auto", "alloc"]
-
 alloc = []
+std = ["num-traits?/std"]
+
+libm = ["num-traits?/libm"]
+
 stable_auto = ["dep:stable_auto"]
 serde = ["dep:serde"]
 half = ["dep:half"]
@@ -24,7 +26,7 @@ half = { version = "2.4.1", default-features = false, optional = true }
 bytemuck = { version = "1.4.1", default-features = false, features = ["derive"], optional = true }
 zerocopy = { version = "0.6.0", default-features = false, optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
-num-traits = { version = "0.2.14", default-features = false, features = ["libm"], optional = true }
+num-traits = { version = "0.2.14", default-features = false, optional = true }
 stable_auto = { version = "0.4.0", default-features = false, optional = true }
 
 [dev-dependencies]
