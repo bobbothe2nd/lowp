@@ -88,6 +88,66 @@ fn bench(c: &mut Criterion) {
             });
         });
 
+        group.bench_function("float8 f8e4m3 sub", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F8E4M3::from_bits(black_box(xs[i]));
+                    let b = F8E4M3::from_bits(black_box(ys[i]));
+
+                    out ^= (a - b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp hf8fn sub", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = hf8fn::from_bits(black_box(xs[i]));
+                    let b = hf8fn::from_bits(black_box(ys[i]));
+
+                    out ^= (a - b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float8 f8e4m3 div", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F8E4M3::from_bits(black_box(xs[i]));
+                    let b = F8E4M3::from_bits(black_box(ys[i]));
+
+                    out ^= (a / b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp hf8fn div", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = hf8fn::from_bits(black_box(xs[i]));
+                    let b = hf8fn::from_bits(black_box(ys[i]));
+
+                    out ^= (a / b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
         group.bench_function("float8 f8e4m3 rem", |bencher| {
             bencher.iter(|| {
                 let mut out = 0u8;
@@ -180,6 +240,158 @@ fn bench(c: &mut Criterion) {
                     let b = f4::from_bits(black_box(ys[i]));
 
                     out ^= (a + b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float4 f4e2m1 mul", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F4E2M1::from_bits(black_box(xs[i]));
+                    let b = F4E2M1::from_bits(black_box(ys[i]));
+
+                    out ^= F4E2M1::from_f64(a.to_f64() * b.to_f64()).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp f4 mul", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = f4::from_bits(black_box(xs[i]));
+                    let b = f4::from_bits(black_box(ys[i]));
+
+                    out ^= (a * b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float4 f4e2m1 sub", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F4E2M1::from_bits(black_box(xs[i]));
+                    let b = F4E2M1::from_bits(black_box(ys[i]));
+
+                    out ^= F4E2M1::from_f64(a.to_f64() - b.to_f64()).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp f4 sub", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = f4::from_bits(black_box(xs[i]));
+                    let b = f4::from_bits(black_box(ys[i]));
+
+                    out ^= (a - b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float4 f4e2m1 div", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F4E2M1::from_bits(black_box(xs[i]));
+                    let b = F4E2M1::from_bits(black_box(ys[i]));
+
+                    out ^= F4E2M1::from_f64(a.to_f64() / b.to_f64()).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp f4 div", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = f4::from_bits(black_box(xs[i]));
+                    let b = f4::from_bits(black_box(ys[i]));
+
+                    out ^= (a / b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float4 f4e2m1 rem", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F4E2M1::from_bits(black_box(xs[i]));
+                    let b = F4E2M1::from_bits(black_box(ys[i]));
+
+                    out ^= F4E2M1::from_f64(a.to_f64() % b.to_f64()).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp f4 rem", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = f4::from_bits(black_box(xs[i]));
+                    let b = f4::from_bits(black_box(ys[i]));
+
+                    out ^= (a % b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float4 f4e2m1 mul_add", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F4E2M1::from_bits(black_box(xs[i]));
+                    let b = F4E2M1::from_bits(black_box(ys[i]));
+                    let c = F4E2M1::from_bits(black_box(zs[i]));
+
+                    out ^= F4E2M1::from_f64(a.to_f64().mul_add(b.to_f64(), c.to_f64())).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp f4 mul_add", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = f4::from_bits(black_box(xs[i]));
+                    let b = f4::from_bits(black_box(ys[i]));
+                    let c = f4::from_bits(black_box(zs[i]));
+
+                    out ^= a.mul_add(b, c).to_bits();
                 }
 
                 black_box(out)
