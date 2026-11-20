@@ -121,15 +121,16 @@ pub(crate) const fn from_float<const E: u32, const M: u32, const B: i32>(x: u64)
     } else {
         let shift = if exp >= 1 { 0 } else { (1 - exp) as u32 };
 
-        let denorm_mant = (1 << M) | mantissa;
+        let denorm_mant = (1u64 << M) | mantissa;
 
-        res = (denorm_mant >> shift) as u8;
+        let total_shift = M - (FP4_SIG_BITS - 1) + shift;
 
-        let round_mask = (fp4_dp_half_ulp << (shift + 1)) - 1;
+        res = (denorm_mant >> total_shift) as u8;
 
-        let round = (absx | (1 << M)) & round_mask;
+        let round_mask = (1u64 << total_shift) - 1;
+        let round = denorm_mant & round_mask;
 
-        let halfway = fp4_dp_half_ulp << shift;
+        let halfway = 1u64 << (total_shift - 1);
 
         if round > halfway || (round == halfway && (res & 1) != 0) {
             res = res.wrapping_add(1);
