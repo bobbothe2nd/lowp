@@ -70,7 +70,7 @@ macro_rules! impl_float8 {
         #[cfg_attr(feature = "serde", derive(serde::Serialize))]
         #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
         #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
-        #[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
+        #[cfg_attr(feature = "auto", derive(stable_auto::Auto))]
         #[repr(transparent)]
         pub struct $name(u8);
 
@@ -80,7 +80,7 @@ macro_rules! impl_float8 {
                 if self.is_nan() || other.is_nan() {
                     false
                 } else if (self.0 & 0x7f) == 0 && (other.0 & 0x7f) == 0 {
-                    true // +0 == -0
+                    true
                 } else {
                     self.0 == other.0
                 }

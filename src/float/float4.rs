@@ -1,4 +1,4 @@
-use core::{hint::assert_unchecked, ops::{Add, Div, Mul, Neg, Rem, Sub}};
+use core::{cmp::Ordering, hint::assert_unchecked, ops::{Add, Div, Mul, Neg, Rem, Sub}};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -13,11 +13,12 @@ use half::{bf16, f16};
 /// Two 4-bit E2M1 floats packed into 1 byte
 ///
 /// Use this when you need contiguous storage or want to optimize 2 floats into 1 operation.
+#[repr(transparent)]
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
-#[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
+#[cfg_attr(feature = "auto", derive(stable_auto::Auto))]
 pub struct f4x2(u8);
 
 impl f4x2 {
@@ -127,6 +128,7 @@ impl f4x2 {
 /// - Normal numbers: ±1.0, ±1.5, ±2.0, ±3.0, ±4.0, ±6.0
 /// - Subnormal numbers: ±0.5
 /// - Zero: ±0.0
+#[repr(transparent)]
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
@@ -136,27 +138,29 @@ pub struct f4(u8);
 
 impl f4 {
     /// Maximum possible value
-    pub const MAX: Self = Self::from_bits(0b0111);
+    pub const MAX: Self = Self(0b0111);
     /// Minimum possible value
-    pub const MIN: Self = Self::from_bits(0b1111);
+    pub const MIN: Self = Self(0b1111);
     /// Smallest possible positive value
-    pub const MIN_POSITIVE: Self = Self::from_bits(0b0001);
+    pub const MIN_POSITIVE: Self = Self(0b0001);
     /// Largest possible subnormal value
-    pub const MAX_SUBNORMAL: Self = Self::from_bits((1 << 1) - 1);
+    pub const MAX_SUBNORMAL: Self = Self(0b0001);
     /// Smallest possible subnormal value
-    pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(1);
+    pub const MIN_POSITIVE_SUBNORMAL: Self = Self(0b0001);
     /// One greater than the minimum possible normal power of 2 exponent
-    pub const MIN_EXP: i32 = 2 - (1 as i32);
+    pub const MIN_EXP: i32 = 1;
     /// Minimum possible normal power of 2 exponent
-    pub const MAX_EXP: i32 = (((1i32 << 2) - 2) - 1);
+    pub const MAX_EXP: i32 = 1;
+    /// This is the difference between 1.0 and the next largest representable number.
+    pub const EPSILON: Self = Self(0b0001);
     /// 0
-    pub const ZERO: Self = Self::from_bits(0);
+    pub const ZERO: Self = Self(0b0000);
     /// -0
-    pub const NEG_ZERO: Self = Self::from_bits(0b1000);
+    pub const NEG_ZERO: Self = Self(0b1000);
     /// 1
-    pub const ONE: Self = Self::from_bits(0b0010);
+    pub const ONE: Self = Self(0b0010);
     /// -1
-    pub const NEG_ONE: Self = Self::from_bits(0b1010);
+    pub const NEG_ONE: Self = Self(0b1010);
 
     /// Construct an 4-bit floating point value from the low bits of the byte.
     #[inline]
@@ -252,6 +256,29 @@ impl f4 {
         self.0 & 0x8 != 0
     }
 
+    /// Returns a number that represents the sign of `self`.
+    ///
+    /// * `1.0` if the number is positive, `+0.0` or `INFINITY`
+    /// * `-1.0` if the number is negative, `-0.0` or `NEG_INFINITY`
+    /// * [`NAN`][Self::NAN] if the number is `NaN`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let f = f4::from_f32(3.5_f32);
+    ///
+    /// assert_eq!(f.signum(), f4::from_f32(1.0));
+    /// ```
+    #[inline]
+    pub const fn signum(self) -> Self {
+        if self.0 & 0x80 != 0 {
+            Self::NEG_ONE
+        } else {
+            Self::ONE
+        }
+    }
+
     /// Computes the absolute value of `self`.
     ///
     /// This function always returns the precise result.
@@ -268,7 +295,100 @@ impl f4 {
     /// ```
     #[inline]
     pub const fn abs(self) -> Self {
-        Self::from_bits(self.0 & 0x7)
+        Self(self.0 & 0x7)
+    }
+
+    /// Returns a number composed of the magnitude of `self` and the sign of `sign`.
+    ///
+    /// Equal to `self` if the sign of `self` and `sign` are the same, otherwise equal to `-self`.
+    /// If `self` is NaN, then NaN with the sign of `sign` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let f = f4::from_f32(3.5);
+    ///
+    /// assert_eq!(f.copysign(f4::from_f32(0.42)), f4::from_f32(3.5));
+    /// assert_eq!(f.copysign(f4::from_f32(-0.42)), f4::from_f32(-3.5));
+    /// assert_eq!((-f).copysign(f4::from_f32(0.42)), f4::from_f32(3.5));
+    /// assert_eq!((-f).copysign(f4::from_f32(-0.42)), f4::from_f32(-3.5));
+    /// ```
+    #[inline]
+    pub const fn copysign(self, sign: Self) -> Self {
+        Self((self.0 & 0x7) | (sign.0 & 0x8))
+    }
+
+    /// Returns the minimum of the two numbers.
+    ///
+    /// If one of the arguments is NaN, then the other argument is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let x = f4::from_f32(1.0);
+    /// let y = f4::from_f32(2.0);
+    ///
+    /// assert_eq!(x.min(y), x);
+    /// ```
+    pub fn min(self, other: Self) -> Self {
+        if other < self {
+            other
+        } else {
+            self
+        }
+    }
+
+    /// Returns the maximum of the two numbers.
+    ///
+    /// If one of the arguments is NaN, then the other argument is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let x = f4::from_f32(1.0);
+    /// let y = f4::from_f32(2.0);
+    ///
+    /// assert_eq!(x.max(y), y);
+    /// ```
+    pub fn max(self, other: Self) -> Self {
+        if other > self {
+            other
+        } else {
+            self
+        }
+    }
+
+    /// Restrict a value to a certain interval unless it is NaN.
+    ///
+    /// Returns `max` if `self` is greater than `max`, and `min` if `self` is less than `min`.
+    /// Otherwise this returns `self`.
+    ///
+    /// Note that this function returns NaN if the initial value was NaN as well.
+    ///
+    /// # Panics
+    /// Panics if `min > max`, `min` is NaN, or `max` is NaN.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(-3.0).clamp(f4::from_f32(-2.0), f4::from_f32(1.0)), f4::from_f32(-2.0));
+    /// assert_eq!(f4::from_f32(0.0).clamp(f4::from_f32(-2.0), f4::from_f32(1.0)), f4::from_f32(0.0));
+    /// assert_eq!(f4::from_f32(2.0).clamp(f4::from_f32(-2.0), f4::from_f32(1.0)), f4::from_f32(1.0));
+    /// ```
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        assert!(min <= max);
+        let mut x = self;
+        if x < min {
+            x = min;
+        }
+        if x > max {
+            x = max;
+        }
+        x
     }
 
     /// `self + rhs`
@@ -393,8 +513,23 @@ impl From<f64> for f4 {
 }
 
 impl PartialOrd for f4 {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        self.to_f32().partial_cmp(&other.to_f32())
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for f4 {
+    fn cmp(&self, other: &Self) -> Ordering {
+        #[inline]
+        const fn cmp_key(x: u8) -> u8 {
+            if x & 0x8 != 0 {
+                (!x) & 0xf
+            } else {
+                x | 0x8
+            }
+        }
+
+        cmp_key(self.0).cmp(&cmp_key(other.0))
     }
 }
 
