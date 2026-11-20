@@ -216,10 +216,10 @@ macro_rules! impl_half_cvt {
 }
 
 mod float8;
-pub use float8::*;
+pub use self::float8::*;
 
 mod float4;
-pub use float4::*;
+pub use self::float4::*;
 
 #[cfg(feature = "num-traits")]
 mod num_traits;

@@ -1,9 +1,5 @@
 use float4::F4E2M1;
-use std::{
-    fs,
-    fmt::Write,
-    path::Path,
-};
+use std::{fmt::Write, fs, path::Path};
 
 const VALUES: [F4E2M1; 16] = [
     F4E2M1::from_bits(0x0),
@@ -24,10 +20,7 @@ const VALUES: [F4E2M1; 16] = [
     F4E2M1::from_bits(0xF),
 ];
 
-fn gen_lut2(
-    name: &str,
-    op: impl Fn(f64, f64) -> f64,
-) -> String {
+fn gen_lut2(name: &str, op: impl Fn(f64, f64) -> f64) -> String {
     let mut out = String::new();
 
     writeln!(out, "#[rustfmt::skip]").unwrap();
@@ -40,11 +33,7 @@ fn gen_lut2(
 
             let result = F4E2M1::from_f64(op(af, bf));
 
-            writeln!(
-                out,
-                "    0x{:X}, // (0x{a:X}, 0x{b:X})",
-                result.to_bits(),
-            ).unwrap();
+            writeln!(out, "    0x{:X}, // (0x{a:X}, 0x{b:X})", result.to_bits(),).unwrap();
         }
     }
 
@@ -53,10 +42,7 @@ fn gen_lut2(
     out
 }
 
-fn gen_lut3(
-    name: &str,
-    op: impl Fn(f64, f64, f64) -> f64,
-) -> String {
+fn gen_lut3(name: &str, op: impl Fn(f64, f64, f64) -> f64) -> String {
     let mut out = String::new();
 
     writeln!(out, "#[rustfmt::skip]").unwrap();
@@ -75,7 +61,8 @@ fn gen_lut3(
                     out,
                     "    0x{:X}, // (0x{a:X}, 0x{b:X}, 0x{c:X})",
                     result.to_bits(),
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
     }

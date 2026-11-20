@@ -10,9 +10,11 @@
 //! * [`f4x2`]: 2 packed `f4` into a byte
 
 #![no_std]
-
 #![forbid(missing_docs, unconditional_recursion)]
 #![allow(non_camel_case_types)]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod bit;
 

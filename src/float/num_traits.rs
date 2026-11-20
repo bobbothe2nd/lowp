@@ -1,6 +1,9 @@
 use core::num::FpCategory;
 
-use num_traits::{AsPrimitive, ConstOne, ConstZero, Float, FloatConst, MulAdd, Num, NumCast, One, ToPrimitive, Zero, float::FloatCore};
+use num_traits::{
+    float::FloatCore, AsPrimitive, ConstOne, ConstZero, Float, FloatConst, MulAdd, Num, NumCast,
+    One, ToPrimitive, Zero,
+};
 
 macro_rules! thin_op {
     ($trait:ident $ret:ident $($name:ident)*) => {$(
@@ -106,7 +109,7 @@ macro_rules! impl_num_traits {
         }
 
         impl<T: Copy + 'static> AsPrimitive<T> for $crate::$ty
-        where 
+        where
             f32: AsPrimitive<T>,
         {
             fn as_(self) -> T {
@@ -289,7 +292,7 @@ macro_rules! impl_float {
             }
 
             fn powi(self, n: i32) -> Self {
-                self.to_f32().powi(n).into()
+                Float::powi(self.to_f32(), n).into()
             }
 
             fn signum(self) -> Self {

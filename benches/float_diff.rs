@@ -1,4 +1,4 @@
-use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use float4::F4E2M1;
 use float8::F8E4M3;
 use lowp::{f4, hf8fn};

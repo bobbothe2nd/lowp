@@ -70,7 +70,7 @@ macro_rules! impl_float8 {
         #[cfg_attr(feature = "serde", derive(serde::Serialize))]
         #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
         #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
-        #[cfg_attr(feature = "auto", derive(stable_auto::Auto))]
+        #[cfg_attr(feature = "stable_auto", derive(stable_auto::Auto))]
         #[repr(transparent)]
         pub struct $name(u8);
 
@@ -131,7 +131,7 @@ macro_rules! impl_float8 {
             /// -1
             pub const NEG_ONE: Self = Self::from_bits(0x80 | (($format.bias as u8) << $format.frac));
             /// This is the difference between 1.0 and the next largest representable number.
-            pub const EPSILON: Self = Self::from_bits(((($format.bias as u8) - $format.frac) << $format.frac));
+            pub const EPSILON: Self = Self::from_bits((($format.bias as u8) - $format.frac) << $format.frac);
 
             /// Construct an 8-bit floating point value from the raw bits.
             #[inline(always)]

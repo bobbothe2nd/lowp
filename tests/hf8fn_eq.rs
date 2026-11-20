@@ -173,9 +173,7 @@ fn check_hf8_rem() {
 
             if ref_rem != soft_rem {
                 if failures < 20 {
-                    println!(
-                        "mismatch: {a:02x} % {b:02x}: soft={soft_rem:02x}, ref={ref_rem:02x}"
-                    );
+                    println!("mismatch: {a:02x} % {b:02x}: soft={soft_rem:02x}, ref={ref_rem:02x}");
                 }
 
                 failures += 1;

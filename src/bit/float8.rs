@@ -1,12 +1,10 @@
-use super::{EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64, round_shift_u64};
+use super::{round_shift_u64, EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64};
 
 pub const NO_INF: u8 = 0xff;
 pub const SIGN: u8 = 0x80;
 
 #[inline(always)]
-pub const fn is_nan<const F: u8, const E: u8, const NAN: u8, const INF: u8>(
-    x: u8,
-) -> bool {
+pub const fn is_nan<const F: u8, const E: u8, const NAN: u8, const INF: u8>(x: u8) -> bool {
     if const { INF != NO_INF } {
         let exp_mask = const { (1u8 << E) - 1 };
         let frac_mask = const { (1u8 << F) - 1 };
@@ -794,10 +792,7 @@ pub const fn rem<
     let b_frac = b_abs & frac_mask;
 
     let (a_sig, a_power) = if a_exp == 0 {
-        (
-            a_frac as u64,
-            const { 1i32 - B as i32 - F as i32 },
-        )
+        (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
             (const { 1u64 << F }) | a_frac as u64,
@@ -806,10 +801,7 @@ pub const fn rem<
     };
 
     let (b_sig, b_power) = if b_exp == 0 {
-        (
-            b_frac as u64,
-            const { 1i32 - B as i32 - F as i32 },
-        )
+        (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
             (const { 1u64 << F }) | b_frac as u64,
@@ -819,54 +811,53 @@ pub const fn rem<
 
     let power_diff = a_power - b_power;
 
-    let (remainder, result_power) =
-        if power_diff >= 0 {
-            let mut r = 0u64;
-            let mut q_odd;
+    let (remainder, result_power) = if power_diff >= 0 {
+        let mut r = 0u64;
+        let mut q_odd;
 
-            let hi = 63 - a_sig.leading_zeros();
-            let mut i = hi as i32;
+        let hi = 63 - a_sig.leading_zeros();
+        let mut i = hi as i32;
 
-            while i >= 0 {
-                let bit = (a_sig >> i as u32) & 1;
+        while i >= 0 {
+            let bit = (a_sig >> i as u32) & 1;
 
-                r = (r << 1) | bit;
+            r = (r << 1) | bit;
 
-                q_odd = r >= b_sig;
+            q_odd = r >= b_sig;
 
-                if q_odd {
-                    r -= b_sig;
-                }
-
-                i -= 1;
+            if q_odd {
+                r -= b_sig;
             }
 
-            let mut i = 0;
+            i -= 1;
+        }
 
-            while i < power_diff {
-                r <<= 1;
+        let mut i = 0;
 
-                q_odd = r >= b_sig;
+        while i < power_diff {
+            r <<= 1;
 
-                if q_odd {
-                    r -= b_sig;
-                }
+            q_odd = r >= b_sig;
 
-                i += 1;
+            if q_odd {
+                r -= b_sig;
             }
 
-            (r, b_power)
-        } else {
-            let shift = (-power_diff) as u32;
+            i += 1;
+        }
 
-            if shift >= 64 || b_sig > (a_sig >> shift) {
-                return a;
-            }
+        (r, b_power)
+    } else {
+        let shift = (-power_diff) as u32;
 
-            let d = b_sig << shift;
+        if shift >= 64 || b_sig > (a_sig >> shift) {
+            return a;
+        }
 
-            (a_sig % d, a_power)
-        };
+        let d = b_sig << shift;
+
+        (a_sig % d, a_power)
+    };
 
     if remainder == 0 {
         return a_sign;
@@ -923,9 +914,7 @@ pub const fn rem<
         return a_sign | MAX;
     }
 
-    let encoded =
-        ((encoded_exp as u8) << F)
-        | (sig as u8 & frac_mask);
+    let encoded = ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
 
     if encoded > MAX {
         return a_sign | MAX;
@@ -947,10 +936,7 @@ pub const fn fma<
     b: u8,
     c: u8,
 ) -> u8 {
-    if is_nan::<F, E, NAN, INF>(a)
-        || is_nan::<F, E, NAN, INF>(b)
-        || is_nan::<F, E, NAN, INF>(c)
-    {
+    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) || is_nan::<F, E, NAN, INF>(c) {
         return NAN;
     }
 
@@ -1014,10 +1000,7 @@ pub const fn fma<
     let c_frac = c_abs & frac_mask;
 
     let (a_sig, a_power) = if a_exp == 0 {
-        (
-            a_frac as u64,
-            const { 1i32 - B as i32 - F as i32 },
-        )
+        (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
             (const { 1u64 << F }) | a_frac as u64,
@@ -1026,10 +1009,7 @@ pub const fn fma<
     };
 
     let (b_sig, b_power) = if b_exp == 0 {
-        (
-            b_frac as u64,
-            const { 1i32 - B as i32 - F as i32 },
-        )
+        (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
             (const { 1u64 << F }) | b_frac as u64,
@@ -1038,10 +1018,7 @@ pub const fn fma<
     };
 
     let (c_sig, c_power) = if c_exp == 0 {
-        (
-            c_frac as u64,
-            const { 1i32 - B as i32 - F as i32 },
-        )
+        (c_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
             (const { 1u64 << F }) | c_frac as u64,
@@ -1058,8 +1035,7 @@ pub const fn fma<
         c_power
     };
 
-    let product = product_sig
-        << (product_power - base_power) as u32;
+    let product = product_sig << (product_power - base_power) as u32;
 
     let addend = if c_zero {
         0
@@ -1068,20 +1044,11 @@ pub const fn fma<
     };
 
     let (magnitude, sign) = if product_sign == c_sign || c_zero {
-        (
-            product + addend,
-            product_sign,
-        )
+        (product + addend, product_sign)
     } else if product >= addend {
-        (
-            product - addend,
-            product_sign,
-        )
+        (product - addend, product_sign)
     } else {
-        (
-            addend - product,
-            c_sign,
-        )
+        (addend - product, c_sign)
     };
 
     if magnitude == 0 {
@@ -1145,9 +1112,7 @@ pub const fn fma<
         };
     }
 
-    let encoded =
-        ((encoded_exp as u8) << F)
-        | (sig as u8 & frac_mask);
+    let encoded = ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
 
     if encoded > MAX {
         return if const { INF != NO_INF } {

@@ -1,7 +1,9 @@
-use core::{cmp::Ordering, hint::assert_unchecked, ops::{Add, Div, Mul, Neg, Rem, Sub}};
+use core::{
+    cmp::Ordering,
+    hint::assert_unchecked,
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
+};
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 
@@ -18,7 +20,7 @@ use half::{bf16, f16};
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
-#[cfg_attr(feature = "auto", derive(stable_auto::Auto))]
+#[cfg_attr(feature = "stable_auto", derive(stable_auto::Auto))]
 pub struct f4x2(u8);
 
 impl f4x2 {
@@ -80,11 +82,7 @@ impl f4x2 {
             .chunks(2)
             .map(|chunk| {
                 let lo = chunk[0];
-                let hi = if chunk.len() == 2 {
-                    chunk[1]
-                } else {
-                    f4::ZERO
-                };
+                let hi = if chunk.len() == 2 { chunk[1] } else { f4::ZERO };
                 f4x2::new(lo, hi)
             })
             .collect()
@@ -112,11 +110,9 @@ impl f4x2 {
     #[cfg(feature = "alloc")]
     pub fn unpack(packed: &[f4x2]) -> Box<[f4]> {
         let mut result = Box::new_uninit_slice(packed.len() * 2);
-        let mut pos = 0;
-        for &pair in packed {
+        for (pos, &pair) in packed.iter().enumerate() {
             result[pos].write(pair.lo());
-            result[pos +1].write(pair.hi());
-            pos += 1;
+            result[pos + 1].write(pair.hi());
         }
         unsafe { result.assume_init() }
     }
@@ -133,7 +129,7 @@ impl f4x2 {
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes))]
-#[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
+#[cfg_attr(feature = "stable_auto", stable_auto::auto_opaque)]
 pub struct f4(u8);
 
 impl f4 {
@@ -181,7 +177,9 @@ impl f4 {
     /// Undefined behavior if any of the high 4 bits of `bits` are set
     #[inline]
     pub const unsafe fn from_bits_unchecked(bits: u8) -> Self {
-        unsafe { assert_unchecked(bits & 0xf0 == 0); }
+        unsafe {
+            assert_unchecked(bits & 0xf0 == 0);
+        }
 
         Self(bits)
     }

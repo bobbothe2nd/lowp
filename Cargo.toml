@@ -2,13 +2,17 @@
 name = "lowp"
 description = "Lightweight software floats for low-precision formats"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+rust-version = "1.83.0"
+license = "MIT"
+documentation = "https://docs.rs/lowp"
+repository = "https://github.com/bobbothe2nd/lowp"
 
 [features]
-default = ["num-traits", "half", "auto", "alloc"]
+default = ["num-traits", "half", "stable_auto", "alloc"]
 
 alloc = []
-auto = ["dep:stable_auto"]
+stable_auto = ["dep:stable_auto"]
 serde = ["dep:serde"]
 half = ["dep:half"]
 bytemuck = ["dep:bytemuck"]

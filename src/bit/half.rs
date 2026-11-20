@@ -1,6 +1,9 @@
 use half::{bf16, f16};
 
-use crate::bit::{float8::{SIGN, NO_INF}, round_shift_u64};
+use crate::bit::{
+    float8::{NO_INF, SIGN},
+    round_shift_u64,
+};
 
 #[inline(always)]
 pub const fn f8_from_f16<
@@ -80,7 +83,7 @@ pub const fn f8_from_f16<
 
     let target_exp = exponent + B as i32;
 
-    if target_exp > max_exp as i32 {
+    if target_exp > max_exp {
         return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
@@ -90,7 +93,7 @@ pub const fn f8_from_f16<
     if sig >= (1u64 << (F + 1)) {
         sig >>= 1;
 
-        if target_exp + 1 > max_exp as i32 {
+        if target_exp + 1 > max_exp {
             return sign | ((max_exp << F) as u8) | ((max_sig - 1) as u8);
         }
 
@@ -169,7 +172,7 @@ pub const fn f8_from_bf16<
     let sign = ((bits >> 8) as u8) & SIGN;
     let abs = bits & 0x7fff;
 
-    let src_exp = ((bits >> 7) & 0xff) as u16;
+    let src_exp = (bits >> 7) & 0xff;
     let src_frac = bits & 0x007f;
 
     let max_exp = if const { INF != NO_INF } {
@@ -231,7 +234,7 @@ pub const fn f8_from_bf16<
 
     let target_exp = exponent + B as i32;
 
-    if target_exp > max_exp as i32 {
+    if target_exp > max_exp {
         return sign | if const { INF == NO_INF } { MAX } else { INF };
     }
 
@@ -240,7 +243,7 @@ pub const fn f8_from_bf16<
     if sig >= (1u64 << (F + 1)) {
         sig >>= 1;
 
-        if target_exp + 1 > max_exp as i32 {
+        if target_exp + 1 > max_exp {
             return sign | ((max_exp << F) as u8) | ((max_sig - 1) as u8);
         }
 
