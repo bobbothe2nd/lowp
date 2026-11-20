@@ -1,6 +1,6 @@
 use core::num::FpCategory;
 
-use num_traits::{AsPrimitive, Float, MulAdd, Num, NumCast, One, ToPrimitive, Zero};
+use num_traits::{AsPrimitive, ConstOne, ConstZero, Float, FloatConst, MulAdd, Num, NumCast, One, ToPrimitive, Zero, float::FloatCore};
 
 use crate::hf8;
 
@@ -10,6 +10,86 @@ macro_rules! thin_op {
             <f32 as $trait>::$name(self.to_f32()).into()
         }
     )*};
+}
+
+macro_rules! const_fn {
+    ($($name:ident)*) => {$(
+        fn $name() -> Self {
+            Self::$name
+        }
+    )*};
+}
+
+impl FloatConst for hf8 {
+    const_fn!(
+        E
+        FRAC_1_PI
+        FRAC_1_SQRT_2
+        FRAC_2_PI
+        FRAC_2_SQRT_PI
+        FRAC_PI_2
+        FRAC_PI_3
+        FRAC_PI_4
+        FRAC_PI_6
+        FRAC_PI_8
+        LN_2
+        LN_10
+        LOG2_E
+        LOG2_10
+        LOG10_E
+        LOG10_2
+        PI
+        SQRT_2
+    );
+}
+
+impl FloatCore for hf8 {
+    fn infinity() -> Self {
+        Self::INFINITY
+    }
+
+    fn neg_infinity() -> Self {
+        Self::NEG_INFINITY
+    }
+
+    fn nan() -> Self {
+        Self::NAN
+    }
+
+    fn neg_zero() -> Self {
+        Self::NEG_ZERO
+    }
+
+    fn max_value() -> Self {
+        Self::MAX
+    }
+
+    fn min_value() -> Self {
+        Self::MIN
+    }
+
+    fn min_positive_value() -> Self {
+        Self::MIN_POSITIVE
+    }
+
+    fn epsilon() -> Self {
+        Self::EPSILON
+    }
+
+    fn abs(self) -> Self {
+        self.abs()
+    }
+
+    thin_op!(
+        Float Self
+        to_degrees to_radians
+    );
+
+    thin_op!(Float FpCategory classify);
+
+    fn integer_decode(self) -> (u64, i16, i8) {
+        Float::integer_decode(self.to_f32())
+    }
 }
 
 impl Float for hf8 {
@@ -115,12 +195,11 @@ impl Float for hf8 {
     }
 
     fn integer_decode(self) -> (u64, i16, i8) {
-        self.to_f32().integer_decode()
+        Float::integer_decode(self.to_f32())
     }
 
     fn mul_add(self, a: Self, b: Self) -> Self {
-        // self.fma(a, b)
-        todo!()
+        self.mul_add(a, b)
     }
 }
 
@@ -128,8 +207,7 @@ impl MulAdd for hf8 {
     type Output = Self;
 
     fn mul_add(self, a: Self, b: Self) -> Self::Output {
-        // self.mul_add(a, b)
-        todo!()
+        self.mul_add(a, b)
     }
 }
 
@@ -174,6 +252,19 @@ impl AsPrimitive<hf8> for f64 {
 }
 
 #[cfg(feature = "half")]
+impl AsPrimitive<hf8> for half::f16 {
+    fn as_(self) -> hf8 {
+        hf8::from_f16(self)
+    }
+}
+
+#[cfg(feature = "half")]
+impl AsPrimitive<hf8> for half::bf16 {
+    fn as_(self) -> hf8 {
+        hf8::from_bf16(self)
+    }
+}
+
 impl<T: Copy + 'static> AsPrimitive<T> for hf8
 where 
     f32: AsPrimitive<T>,
@@ -191,6 +282,14 @@ impl Num for hf8 {
     }
 }
 
+impl ConstZero for hf8 {
+    const ZERO: Self = Self::ZERO;
+}
+
+impl ConstOne for hf8 {
+    const ONE: Self = Self::ONE;
+}
+
 impl Zero for hf8 {
     fn is_zero(&self) -> bool {
         self.abs().to_bits() == 0
@@ -198,10 +297,6 @@ impl Zero for hf8 {
 
     fn zero() -> Self {
         Self::ZERO
-    }
-
-    fn set_zero(&mut self) {
-        *self = Self::ZERO;
     }
 }
 
@@ -212,9 +307,5 @@ impl One for hf8 {
 
     fn one() -> Self {
         Self::ONE
-    }
-
-    fn set_one(&mut self) {
-        *self = Self::ONE;
     }
 }

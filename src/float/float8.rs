@@ -648,6 +648,24 @@ macro_rules! impl_float8 {
                 >(self.0, rhs.0))
             }
 
+            /// `(self * a) + b`
+            #[inline]
+            pub const fn mul_add(self, a: Self, b: Self) -> Self {
+                Self($crate::bit::float8::fma::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::float8::NO_INF,
+                        }
+                    },
+                >(self.0, a.0, b.0))
+            }
+
             /// `-self`
             #[inline]
             pub const fn neg_const(self) -> Self {

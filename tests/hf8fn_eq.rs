@@ -149,6 +149,89 @@ fn check_hf8_div() {
 }
 
 #[test]
+fn check_hf8_rem() {
+    let mut failures = 0;
+
+    for a in 0u16..=255 {
+        for b in 0u16..=255 {
+            let a = a as u8;
+            let b = b as u8;
+
+            let ref_rem = {
+                let x = F8E4M3::from_bits(a);
+                let y = F8E4M3::from_bits(b);
+
+                (x % y).to_bits()
+            };
+
+            let soft_rem = {
+                let x = hf8fn::from_bits(a);
+                let y = hf8fn::from_bits(b);
+
+                (x % y).to_bits()
+            };
+
+            if ref_rem != soft_rem {
+                if failures < 20 {
+                    println!(
+                        "mismatch: {a:02x} % {b:02x}: soft={soft_rem:02x}, ref={ref_rem:02x}"
+                    );
+                }
+
+                failures += 1;
+            }
+        }
+    }
+
+    println!("mismatches: {failures}");
+    assert_eq!(failures, 0);
+}
+
+#[test]
+fn check_hf8_fma() {
+    let mut failures = 0;
+
+    for a in 0u16..=255 {
+        for b in 0u16..=255 {
+            for c in 0u16..=255 {
+                let a = a as u8;
+                let b = b as u8;
+                let c = c as u8;
+
+                let ref_fma = {
+                    let x = F8E4M3::from_bits(a);
+                    let y = F8E4M3::from_bits(b);
+                    let z = F8E4M3::from_bits(c);
+
+                    F8E4M3::from_f32(x.to_f32().mul_add(y.to_f32(), z.to_f32())).to_bits()
+                };
+
+                let soft_fma = {
+                    let x = hf8fn::from_bits(a);
+                    let y = hf8fn::from_bits(b);
+                    let z = hf8fn::from_bits(c);
+
+                    x.mul_add(y, z).to_bits()
+                };
+
+                if ref_fma != soft_fma {
+                    if failures < 20 {
+                        println!(
+                            "mismatch: fma({a:02x}, {b:02x}, {c:02x}): soft={soft_fma:02x}, ref={ref_fma:02x}"
+                        );
+                    }
+
+                    failures += 1;
+                }
+            }
+        }
+    }
+
+    println!("mismatches: {failures}");
+    assert_eq!(failures, 0);
+}
+
+#[test]
 fn check_hf8_to_f32() {
     let mut failures = 0;
 

@@ -20,77 +20,8 @@ use half::{bf16, f16};
 #[cfg_attr(feature = "auto", stable_auto::auto_opaque)]
 pub struct f4x2(u8);
 
-/// Packs individual [`f4`] values into [`f4x2`] pairs.
-///
-/// If `values.len()` is odd, the last element is paired with
-/// [`f4::ZERO`] as padding.
-///
-/// # Examples
-///
-/// ```
-/// use lowp::{f4x2, f4, pack, unpack};
-///
-/// let values = vec![
-///     f4::from_f64(1.5),
-///     f4::from_f64(-2.0),
-///     f4::from_f64(3.0),
-/// ];
-/// let packed = pack(&values);
-/// assert_eq!(packed.len(), 2); // 3 values → 2 bytes (last padded)
-/// assert_eq!(packed[0].lo().to_f64(), 1.5);
-/// assert_eq!(packed[0].hi().to_f64(), -2.0);
-/// assert_eq!(packed[1].lo().to_f64(), 3.0);
-/// assert_eq!(packed[1].hi().to_f64(), 0.0); // zero-padded
-/// ```
-#[cfg(feature = "alloc")]
-pub fn pack(values: &[f4]) -> Box<[f4x2]> {
-    values
-        .chunks(2)
-        .map(|chunk| {
-            let lo = chunk[0];
-            let hi = if chunk.len() == 2 {
-                chunk[1]
-            } else {
-                f4::ZERO
-            };
-            f4x2::new(lo, hi)
-        })
-        .collect()
-}
-
-/// Unpacks [`f4`] pairs into individual [`f4x2`] values.
-///
-/// Each packed byte produces exactly two values. To recover the original
-/// count when the input had an odd length, the caller should truncate the
-/// result as needed.
-///
-/// # Examples
-///
-/// ```
-/// use lowp::{f4x2, f4, unpack};
-///
-/// let packed = vec![
-///     f4x2::new(f4::from_f64(1.0), f4::from_f64(2.0)),
-/// ];
-/// let values = unpack(&packed);
-/// assert_eq!(values.len(), 2);
-/// assert_eq!(values[0].to_f64(), 1.0);
-/// assert_eq!(values[1].to_f64(), 2.0);
-/// ```
-#[cfg(feature = "alloc")]
-pub fn unpack(packed: &[f4x2]) -> Box<[f4]> {
-    let mut result = Box::new_uninit_slice(packed.len() * 2);
-    let mut pos = 0;
-    for &pair in packed {
-        result[pos].write(pair.lo());
-        result[pos +1].write(pair.hi());
-        pos += 1;
-    }
-    unsafe { result.assume_init() }
-}
-
 impl f4x2 {
-    /// Construct an 8-bit floating point value from the raw bits.
+    /// Reinterprets bits as 2 packed 4-bit floats.
     pub fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
@@ -118,6 +49,75 @@ impl f4x2 {
     /// Return the high 4-bit float
     pub const fn hi(self) -> f4 {
         f4(self.0 >> 4)
+    }
+
+    /// Packs individual [`f4`] values into [`f4x2`] pairs.
+    ///
+    /// If `values.len()` is odd, the last element is paired with
+    /// [`f4::ZERO`] as padding.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lowp::{f4x2, f4};
+    ///
+    /// let values = vec![
+    ///     f4::from_f64(1.5),
+    ///     f4::from_f64(-2.0),
+    ///     f4::from_f64(3.0),
+    /// ];
+    /// let packed = f4x2::pack(&values);
+    /// assert_eq!(packed.len(), 2); // 3 values → 2 bytes (last padded)
+    /// assert_eq!(packed[0].lo().to_f64(), 1.5);
+    /// assert_eq!(packed[0].hi().to_f64(), -2.0);
+    /// assert_eq!(packed[1].lo().to_f64(), 3.0);
+    /// assert_eq!(packed[1].hi().to_f64(), 0.0); // zero-padded
+    /// ```
+    #[cfg(feature = "alloc")]
+    pub fn pack(values: &[f4]) -> Box<[f4x2]> {
+        values
+            .chunks(2)
+            .map(|chunk| {
+                let lo = chunk[0];
+                let hi = if chunk.len() == 2 {
+                    chunk[1]
+                } else {
+                    f4::ZERO
+                };
+                f4x2::new(lo, hi)
+            })
+            .collect()
+    }
+
+    /// Unpacks [`f4`] pairs into individual [`f4x2`] values.
+    ///
+    /// Each packed byte produces exactly two values. To recover the original
+    /// count when the input had an odd length, the caller should truncate the
+    /// result as needed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lowp::{f4x2, f4};
+    ///
+    /// let packed = vec![
+    ///     f4x2::new(f4::from_f64(1.0), f4::from_f64(2.0)),
+    /// ];
+    /// let values = f4x2::unpack(&packed);
+    /// assert_eq!(values.len(), 2);
+    /// assert_eq!(values[0].to_f64(), 1.0);
+    /// assert_eq!(values[1].to_f64(), 2.0);
+    /// ```
+    #[cfg(feature = "alloc")]
+    pub fn unpack(packed: &[f4x2]) -> Box<[f4]> {
+        let mut result = Box::new_uninit_slice(packed.len() * 2);
+        let mut pos = 0;
+        for &pair in packed {
+            result[pos].write(pair.lo());
+            result[pos +1].write(pair.hi());
+            pos += 1;
+        }
+        unsafe { result.assume_init() }
     }
 }
 
@@ -158,13 +158,19 @@ impl f4 {
     /// -1
     pub const NEG_ONE: Self = Self::from_bits(0b1010);
 
-    /// Construct an 8-bit floating point value from the raw bits.
+    /// Construct an 4-bit floating point value from the low bits of the byte.
     #[inline]
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits & 0xf)
     }
 
-    /// Construct an 8-bit floating point value from the raw bits.
+    /// Construct an 4-bit floating point value from the high bits of the byte.
+    #[inline]
+    pub const fn from_hi_bits(bits: u8) -> Self {
+        Self(bits >> 4)
+    }
+
+    /// Construct an 4-bit floating point value from the raw bits.
     ///
     /// # Safety
     ///

@@ -9,6 +9,7 @@ const OPS: usize = 4096;
 fn bench(c: &mut Criterion) {
     let mut xs = [0u8; OPS];
     let mut ys = [0u8; OPS];
+    let mut zs = [0u8; OPS];
 
     let mut s = 0x12345678u32;
 
@@ -19,6 +20,7 @@ fn bench(c: &mut Criterion) {
 
         xs[i] = s as u8;
         ys[i] = (s >> 8) as u8;
+        zs[i] = (s >> 16) as u8;
     }
 
     {
@@ -80,6 +82,68 @@ fn bench(c: &mut Criterion) {
                     let b = hf8fn::from_bits(black_box(ys[i]));
 
                     out ^= (a * b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float8 f8e4m3 rem", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F8E4M3::from_bits(black_box(xs[i]));
+                    let b = F8E4M3::from_bits(black_box(ys[i]));
+
+                    out ^= (a % b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp hf8fn rem", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = hf8fn::from_bits(black_box(xs[i]));
+                    let b = hf8fn::from_bits(black_box(ys[i]));
+
+                    out ^= (a % b).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("float8 f8e4m3 mul_add", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = F8E4M3::from_bits(black_box(xs[i]));
+                    let b = F8E4M3::from_bits(black_box(ys[i]));
+                    let c = F8E4M3::from_bits(black_box(zs[i]));
+
+                    out ^= F8E4M3::from_f32(a.to_f32().mul_add(b.to_f32(), c.to_f32())).to_bits();
+                }
+
+                black_box(out)
+            });
+        });
+
+        group.bench_function("lowp hf8fn mul_add", |bencher| {
+            bencher.iter(|| {
+                let mut out = 0u8;
+
+                for i in 0..OPS {
+                    let a = hf8fn::from_bits(black_box(xs[i]));
+                    let b = hf8fn::from_bits(black_box(ys[i]));
+                    let c = hf8fn::from_bits(black_box(zs[i]));
+
+                    out ^= a.mul_add(b, c).to_bits();
                 }
 
                 black_box(out)
