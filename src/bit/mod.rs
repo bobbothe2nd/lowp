@@ -28,7 +28,7 @@ const fn round_shift_u64(x: u64, shift: u32) -> u64 {
     }
 }
 
-pub mod f4_lut;
+pub mod lut;
 
 pub mod float4;
 pub mod float8;

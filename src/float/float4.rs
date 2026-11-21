@@ -370,6 +370,7 @@ impl f4 {
     ///
     /// assert_eq!(x.min(y), x);
     /// ```
+    #[inline]
     pub fn min(self, other: Self) -> Self {
         if other < self {
             other
@@ -391,6 +392,7 @@ impl f4 {
     ///
     /// assert_eq!(x.max(y), y);
     /// ```
+    #[inline]
     pub fn max(self, other: Self) -> Self {
         if other > self {
             other
@@ -417,6 +419,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(0.0).clamp(f4::from_f32(-2.0), f4::from_f32(1.0)), f4::from_f32(0.0));
     /// assert_eq!(f4::from_f32(2.0).clamp(f4::from_f32(-2.0), f4::from_f32(1.0)), f4::from_f32(1.0));
     /// ```
+    #[inline]
     pub fn clamp(self, min: Self, max: Self) -> Self {
         assert!(min <= max);
         let mut x = self;
@@ -469,6 +472,204 @@ impl f4 {
     #[inline(always)]
     pub const fn neg_const(self) -> Self {
         Self(self.0 ^ 0x8)
+    }
+
+    /// Euclidean division `self / rhs`
+    #[inline(always)]
+    pub const fn div_euclid(self, rhs: Self) -> Self {
+        Self(unsafe { float4::div_euclid(self.0, rhs.0) })
+    }
+
+    /// Euclidean remainder `self % rhs`
+    #[inline(always)]
+    pub const fn rem_euclid(self, rhs: Self) -> Self {
+        Self(unsafe { float4::rem_euclid(self.0, rhs.0) })
+    }
+
+    /// `log(self, rhs)`
+    #[inline(always)]
+    pub const fn log(self, base: Self) -> Self {
+        Self(unsafe { float4::log(self.0, base.0) })
+    }
+
+    /// `atan2(self, rhs)`
+    #[inline(always)]
+    pub const fn atan2(self, rhs: Self) -> Self {
+        Self(unsafe { float4::atan2(self.0, rhs.0) })
+    }
+
+    /// `self^rhs`
+    #[inline(always)]
+    pub const fn powf(self, rhs: Self) -> Self {
+        Self(unsafe { float4::powf(self.0, rhs.0) })
+    }
+
+    /// `hypot(self, rhs)`
+    #[inline(always)]
+    pub const fn hypot(self, rhs: Self) -> Self {
+        Self(unsafe { float4::hypot(self.0, rhs.0) })
+    }
+
+    /// `midpoint(self, rhs)`
+    #[inline(always)]
+    pub const fn midpoint(self, rhs: Self) -> Self {
+        Self(unsafe { float4::midpoint(self.0, rhs.0) })
+    }
+
+    /// `cos(self)`
+    #[inline(always)]
+    pub const fn cos(self) -> Self {
+        Self(unsafe { float4::cos(self.0) })
+    }
+
+    /// `sin(self)`
+    #[inline(always)]
+    pub const fn sin(self) -> Self {
+        Self(unsafe { float4::sin(self.0) })
+    }
+
+    /// `acos(self)`
+    #[inline(always)]
+    pub const fn acos(self) -> Self {
+        Self(unsafe { float4::acos(self.0) })
+    }
+
+    /// `asin(self)`
+    #[inline(always)]
+    pub const fn asin(self) -> Self {
+        Self(unsafe { float4::asin(self.0) })
+    }
+
+    /// `acosh(self)`
+    #[inline(always)]
+    pub const fn acosh(self) -> Self {
+        Self(unsafe { float4::acosh(self.0) })
+    }
+
+    /// `asinh(self)`
+    #[inline(always)]
+    pub const fn asinh(self) -> Self {
+        Self(unsafe { float4::asinh(self.0) })
+    }
+
+    /// `log(self, E)`
+    #[inline(always)]
+    pub const fn ln(self) -> Self {
+        Self(unsafe { float4::ln(self.0) })
+    }
+
+    /// `ln_1p(1 + self, E)`
+    #[inline(always)]
+    pub const fn ln_1p(self) -> Self {
+        Self(unsafe { float4::ln_1p(self.0) })
+    }
+
+    /// `log(self, 2)`
+    #[inline(always)]
+    pub const fn log2(self) -> Self {
+        Self(unsafe { float4::log2(self.0) })
+    }
+
+    /// `log(self, 10)`
+    #[inline(always)]
+    pub const fn log10(self) -> Self {
+        Self(unsafe { float4::log10(self.0) })
+    }
+
+    /// `tan(self, 2)`
+    #[inline(always)]
+    pub const fn tan(self) -> Self {
+        Self(unsafe { float4::tan(self.0) })
+    }
+
+    /// `tanh(self, 2)`
+    #[inline(always)]
+    pub const fn tanh(self) -> Self {
+        Self(unsafe { float4::tanh(self.0) })
+    }
+
+    /// `atan(self, 2)`
+    #[inline(always)]
+    pub const fn atan(self) -> Self {
+        Self(unsafe { float4::atan(self.0) })
+    }
+
+    /// `atanh(self, 2)`
+    #[inline(always)]
+    pub const fn atanh(self) -> Self {
+        Self(unsafe { float4::atanh(self.0) })
+    }
+
+    /// `E^self`
+    #[inline(always)]
+    pub const fn exp(self) -> Self {
+        Self(unsafe { float4::exp(self.0) })
+    }
+
+    /// `2^self`
+    #[inline(always)]
+    pub const fn exp2(self) -> Self {
+        Self(unsafe { float4::exp2(self.0) })
+    }
+
+    /// `E^self-1`
+    #[inline(always)]
+    pub const fn exp_m1(self) -> Self {
+        Self(unsafe { float4::exp_m1(self.0) })
+    }
+
+    /// `√self`
+    #[inline(always)]
+    pub const fn sqrt(self) -> Self {
+        Self(unsafe { float4::sqrt(self.0) })
+    }
+
+    /// `∛self`
+    #[inline(always)]
+    pub const fn cbrt(self) -> Self {
+        Self(unsafe { float4::cbrt(self.0) })
+    }
+
+    /// `1/self`
+    #[inline(always)]
+    pub const fn recip(self) -> Self {
+        Self(unsafe { float4::recip(self.0) })
+    }
+
+    /// rounded down
+    #[inline(always)]
+    pub const fn floor(self) -> Self {
+        Self(unsafe { float4::floor(self.0) })
+    }
+
+    /// rounded up
+    #[inline(always)]
+    pub const fn ceil(self) -> Self {
+        Self(unsafe { float4::ceil(self.0) })
+    }
+
+    /// integer part of `self`
+    #[inline(always)]
+    pub const fn trunc(self) -> Self {
+        Self(unsafe { float4::trunc(self.0) })
+    }
+
+    /// `self*180/π`
+    #[inline(always)]
+    pub const fn to_degrees(self) -> Self {
+        Self(unsafe { float4::to_degrees(self.0) })
+    }
+
+    /// `self*π/180`
+    #[inline(always)]
+    pub const fn to_radians(self) -> Self {
+        Self(unsafe { float4::to_radians(self.0) })
+    }
+
+    /// fractional part of `self`
+    #[inline(always)]
+    pub const fn fract(self) -> Self {
+        Self(unsafe { float4::fract(self.0) })
     }
 }
 

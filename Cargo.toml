@@ -35,5 +35,9 @@ float4 = "0.2.0"
 float8 = "0.7"
 
 [[bench]]
-name = "float_diff"
+name = "float4_diff"
+harness = false
+
+[[bench]]
+name = "float8_diff"
 harness = false

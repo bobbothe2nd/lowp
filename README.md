@@ -104,11 +104,6 @@ Since `f4` has just 16 possible values, a lookup table for each operation has re
 
 In practive, the static data usage isn't even that bad:
 
-- `LUT_ADD`: 256 bytes
-- `LUT_MUL`: 256 bytes
-- `LUT_SUB`: 256 bytes
-- `LUT_DIV`: 256 bytes
-- `LUT_REM`: 256 bytes
-- `LUT_FMA`: 4096 bytes
+- `LUT_F4`: 4KiB
 
 for a total of 5376 bytes.

@@ -175,13 +175,33 @@ macro_rules! lut {
             ::core::hint::assert_unchecked($c & 0xf0 == 0);
         }
 
-        let idx = (($a as usize) << 8) | (($b as usize) << 4) | ($c as usize);
+        let idx = (($c as usize) << 8) | (($a as usize) << 4) | ($b as usize);
 
         unsafe {
-            ::core::hint::assert_unchecked(idx < $lut.len());
+            ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
         }
 
-        $lut[idx]
+        super::lut::$lut[idx] & 0x0f
+    }};
+
+    (
+        $lut:ident,
+        $a:ident,
+        $b:expr,
+        $c:literal$(,)?
+    ) => {{
+        unsafe {
+            ::core::hint::assert_unchecked($a & 0xf0 == 0);
+            ::core::hint::assert_unchecked($b & 0xf0 == 0);
+        }
+
+        let idx = ($c << 8) | (($a as usize) << 4) | ($b as usize);
+
+        unsafe {
+            ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
+        }
+
+        super::lut::$lut[idx] >> 4
     }};
 
     (
@@ -197,35 +217,204 @@ macro_rules! lut {
         let idx = (($a as usize) << 4) | ($b as usize);
 
         unsafe {
-            ::core::hint::assert_unchecked(idx < $lut.len());
+            ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
         }
 
-        $lut[idx]
+        super::lut::$lut[idx]
     }};
 }
 
-use super::f4_lut::{LUT_ADD, LUT_DIV, LUT_FMA, LUT_MUL, LUT_REM, LUT_SUB};
-
+#[inline(always)]
 pub const unsafe fn add(a: u8, b: u8) -> u8 {
-    lut!(LUT_ADD, a, b)
+    lut!(LUT_F4, a, b, 0)
 }
 
-pub const unsafe fn sub(a: u8, b: u8) -> u8 {
-    lut!(LUT_SUB, a, b)
-}
-
+#[inline(always)]
 pub const unsafe fn mul(a: u8, b: u8) -> u8 {
-    lut!(LUT_MUL, a, b)
+    lut!(LUT_F4, a, b, 1)
 }
 
+#[inline(always)]
+pub const unsafe fn sub(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 2)
+}
+
+#[inline(always)]
 pub const unsafe fn div(a: u8, b: u8) -> u8 {
-    lut!(LUT_DIV, a, b)
+    lut!(LUT_F4, a, b, 3)
 }
 
+#[inline(always)]
+pub const unsafe fn div_euclid(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 4)
+}
+
+#[inline(always)]
 pub const unsafe fn rem(a: u8, b: u8) -> u8 {
-    lut!(LUT_REM, a, b)
+    lut!(LUT_F4, a, b, 5)
 }
 
+#[inline(always)]
+pub const unsafe fn log(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 6)
+}
+
+#[inline(always)]
+pub const unsafe fn atan2(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 7)
+}
+
+#[inline(always)]
+pub const unsafe fn powf(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 8)
+}
+
+#[inline(always)]
+pub const unsafe fn hypot(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 9)
+}
+
+#[inline(always)]
+pub const unsafe fn midpoint(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 10)
+}
+
+#[inline(always)]
+pub const unsafe fn rem_euclid(a: u8, b: u8) -> u8 {
+    lut!(LUT_F4, a, b, 11)
+}
+
+#[inline(always)]
+pub const unsafe fn cos(a: u8) -> u8 {
+    lut!(LUT_F4, a, 0, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn sin(a: u8) -> u8 {
+    lut!(LUT_F4, a, 1, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn acos(a: u8) -> u8 {
+    lut!(LUT_F4, a, 2, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn asin(a: u8) -> u8 {
+    lut!(LUT_F4, a, 3, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn acosh(a: u8) -> u8 {
+    lut!(LUT_F4, a, 4, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn asinh(a: u8) -> u8 {
+    lut!(LUT_F4, a, 5, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn ln(a: u8) -> u8 {
+    lut!(LUT_F4, a, 6, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn ln_1p(a: u8) -> u8 {
+    lut!(LUT_F4, a, 7, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn log2(a: u8) -> u8 {
+    lut!(LUT_F4, a, 8, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn log10(a: u8) -> u8 {
+    lut!(LUT_F4, a, 9, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn tan(a: u8) -> u8 {
+    lut!(LUT_F4, a, 10, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn tanh(a: u8) -> u8 {
+    lut!(LUT_F4, a, 11, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn atan(a: u8) -> u8 {
+    lut!(LUT_F4, a, 12, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn atanh(a: u8) -> u8 {
+    lut!(LUT_F4, a, 13, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn exp(a: u8) -> u8 {
+    lut!(LUT_F4, a, 14, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn exp2(a: u8) -> u8 {
+    lut!(LUT_F4, a, 15, 12)
+}
+
+#[inline(always)]
+pub const unsafe fn exp_m1(a: u8) -> u8 {
+    lut!(LUT_F4, a, 0, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn sqrt(a: u8) -> u8 {
+    lut!(LUT_F4, a, 1, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn cbrt(a: u8) -> u8 {
+    lut!(LUT_F4, a, 2, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn recip(a: u8) -> u8 {
+    lut!(LUT_F4, a, 3, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn floor(a: u8) -> u8 {
+    lut!(LUT_F4, a, 4, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn ceil(a: u8) -> u8 {
+    lut!(LUT_F4, a, 5, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn trunc(a: u8) -> u8 {
+    lut!(LUT_F4, a, 6, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn to_degrees(a: u8) -> u8 {
+    lut!(LUT_F4, a, 7, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn to_radians(a: u8) -> u8 {
+    lut!(LUT_F4, a, 8, 13)
+}
+
+#[inline(always)]
+pub const unsafe fn fract(a: u8) -> u8 {
+    lut!(LUT_F4, a, 9, 13)
+}
+
+#[inline(always)]
 pub const unsafe fn fma(a: u8, b: u8, c: u8) -> u8 {
-    lut!(LUT_FMA, a, b, c)
+    lut!(LUT_F4, a, b, c)
 }
