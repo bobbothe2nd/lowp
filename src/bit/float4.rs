@@ -164,21 +164,44 @@ pub(crate) const fn from_f64(x: f64) -> u8 {
 
 macro_rules! lut {
     (
-        $lut:expr,
+        $lut:ident,
         $a:ident,
         $b:ident,
         $c:ident$(,)?
-    ) => {
-        $lut[(($a as usize) << 8) | (($b as usize) << 4) | ($c as usize)]
-    };
+    ) => {{
+        unsafe {
+            ::core::hint::assert_unchecked($a & 0xf0 == 0);
+            ::core::hint::assert_unchecked($b & 0xf0 == 0);
+            ::core::hint::assert_unchecked($c & 0xf0 == 0);
+        }
+
+        let idx = (($a as usize) << 8) | (($b as usize) << 4) | ($c as usize);
+
+        unsafe {
+            ::core::hint::assert_unchecked(idx < $lut.len());
+        }
+
+        $lut[idx]
+    }};
 
     (
-        $lut:expr,
+        $lut:ident,
         $a:ident,
         $b:ident$(,)?
-    ) => {
-        $lut[(($a as usize) << 4) | ($b as usize)]
-    };
+    ) => {{
+        unsafe {
+            ::core::hint::assert_unchecked($a & 0xf0 == 0);
+            ::core::hint::assert_unchecked($b & 0xf0 == 0);
+        }
+
+        let idx = (($a as usize) << 4) | ($b as usize);
+
+        unsafe {
+            ::core::hint::assert_unchecked(idx < $lut.len());
+        }
+
+        $lut[idx]
+    }};
 }
 
 use super::f4_lut::{LUT_ADD, LUT_DIV, LUT_FMA, LUT_MUL, LUT_REM, LUT_SUB};
