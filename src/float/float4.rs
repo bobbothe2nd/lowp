@@ -25,33 +25,71 @@ pub struct f4x2(u8);
 
 impl f4x2 {
     /// Reinterprets bits as 2 packed 4-bit floats.
+    #[inline(always)]
     pub fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
 
     /// Return the raw bits.
+    #[inline(always)]
     pub const fn to_bits(self) -> u8 {
         self.0
     }
 
-    /// Return the raw bits.
+    /// Pack 2 disjoint 4-bit floats.
+    #[inline(always)]
     pub const fn new(lo: f4, hi: f4) -> Self {
         Self(lo.0 | (hi.0 << 4))
     }
 
+    /// Copy 1 4-bit float into 2 packed floats.
+    #[inline(always)]
+    pub const fn splat(val: f4) -> Self {
+        Self::new(val, val)
+    }
+
     /// Return both the low and high 4-bit floats
+    #[inline(always)]
     pub const fn lo_hi(self) -> (f4, f4) {
         (self.lo(), self.hi())
     }
 
     /// Return the low 4-bit float
+    #[inline(always)]
     pub const fn lo(self) -> f4 {
         f4(self.0 & 0xf)
     }
 
     /// Return the high 4-bit float
+    #[inline(always)]
     pub const fn hi(self) -> f4 {
         f4(self.0 >> 4)
+    }
+
+    /// Return both the low and high 4-bit floats
+    #[inline(always)]
+    pub const fn lo_hi_f32(self) -> (f32, f32) {
+        (self.lo().to_f32(), self.hi().to_f32())
+    }
+
+    /// Return both the low and high 4-bit floats
+    #[inline(always)]
+    pub const fn lo_hi_f64(self) -> (f64, f64) {
+        (self.lo().to_f64(), self.hi().to_f64())
+    }
+
+    /// Return both the low and high 4-bit floats
+    #[inline(always)]
+    #[cfg(feature = "half")]
+    pub const fn lo_hi_f16(self) -> (half::f16, half::f16) {
+        (self.lo().to_f16(), self.hi().to_f16())
+    }
+
+    /// Return both the low and high 4-bit floats
+    #[inline(always)]
+    #[cfg(feature = "half")]
+    pub const fn lo_hi_bf16(self) -> (half::bf16, half::bf16) {
+        (self.lo().to_bf16(), self.hi().to_bf16())
     }
 
     /// Packs individual [`f4`] values into [`f4x2`] pairs.
@@ -76,6 +114,7 @@ impl f4x2 {
     /// assert_eq!(packed[1].lo().to_f64(), 3.0);
     /// assert_eq!(packed[1].hi().to_f64(), 0.0); // zero-padded
     /// ```
+    #[inline]
     #[cfg(feature = "alloc")]
     pub fn pack(values: &[f4]) -> Box<[f4x2]> {
         values
@@ -107,6 +146,7 @@ impl f4x2 {
     /// assert_eq!(values[0].to_f64(), 1.0);
     /// assert_eq!(values[1].to_f64(), 2.0);
     /// ```
+    #[inline]
     #[cfg(feature = "alloc")]
     pub fn unpack(packed: &[f4x2]) -> Box<[f4]> {
         let mut result = Box::new_uninit_slice(packed.len() * 2);
@@ -159,13 +199,13 @@ impl f4 {
     pub const NEG_ONE: Self = Self(0b1010);
 
     /// Construct an 4-bit floating point value from the low bits of the byte.
-    #[inline]
+    #[inline(always)]
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits & 0xf)
     }
 
     /// Construct an 4-bit floating point value from the high bits of the byte.
-    #[inline]
+    #[inline(always)]
     pub const fn from_hi_bits(bits: u8) -> Self {
         Self(bits >> 4)
     }
@@ -175,7 +215,7 @@ impl f4 {
     /// # Safety
     ///
     /// Undefined behavior if any of the high 4 bits of `bits` are set
-    #[inline]
+    #[inline(always)]
     pub const unsafe fn from_bits_unchecked(bits: u8) -> Self {
         unsafe {
             assert_unchecked(bits & 0xf0 == 0);
@@ -185,7 +225,7 @@ impl f4 {
     }
 
     /// Return the raw bits.
-    #[inline]
+    #[inline(always)]
     pub const fn to_bits(self) -> u8 {
         self.0
     }
@@ -243,13 +283,13 @@ impl f4 {
     }
 
     /// Returns `true` if and only if `self` has a positive sign, including +0.0, NaNs with a positive sign bit and +∞.
-    #[inline]
+    #[inline(always)]
     pub const fn is_sign_positive(self) -> bool {
         self.0 & 0x8 == 0
     }
 
     /// Returns `true` if and only if `self` has a negative sign, including −0.0, NaNs with a negative sign bit and −∞.
-    #[inline]
+    #[inline(always)]
     pub const fn is_sign_negative(self) -> bool {
         self.0 & 0x8 != 0
     }
@@ -268,7 +308,7 @@ impl f4 {
     ///
     /// assert_eq!(f.signum(), f4::from_f32(1.0));
     /// ```
-    #[inline]
+    #[inline(always)]
     pub const fn signum(self) -> Self {
         if self.0 & 0x80 != 0 {
             Self::NEG_ONE
@@ -291,7 +331,7 @@ impl f4 {
     /// assert_eq!(x.abs(), x);
     /// assert_eq!(y.abs(), -y);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub const fn abs(self) -> Self {
         Self(self.0 & 0x7)
     }
@@ -312,7 +352,7 @@ impl f4 {
     /// assert_eq!((-f).copysign(f4::from_f32(0.42)), f4::from_f32(3.5));
     /// assert_eq!((-f).copysign(f4::from_f32(-0.42)), f4::from_f32(-3.5));
     /// ```
-    #[inline]
+    #[inline(always)]
     pub const fn copysign(self, sign: Self) -> Self {
         Self((self.0 & 0x7) | (sign.0 & 0x8))
     }
@@ -390,43 +430,43 @@ impl f4 {
     }
 
     /// `self + rhs`
-    #[inline]
+    #[inline(always)]
     pub const fn add_const(self, rhs: Self) -> Self {
         Self(unsafe { float4::add(self.0, rhs.0) })
     }
 
     /// `self * rhs`
-    #[inline]
+    #[inline(always)]
     pub const fn mul_const(self, rhs: Self) -> Self {
         Self(unsafe { float4::mul(self.0, rhs.0) })
     }
 
     /// `self - rhs`
-    #[inline]
+    #[inline(always)]
     pub const fn sub_const(self, rhs: Self) -> Self {
         Self(unsafe { float4::sub(self.0, rhs.0) })
     }
 
     /// `self / rhs`
-    #[inline]
+    #[inline(always)]
     pub const fn div_const(self, rhs: Self) -> Self {
         Self(unsafe { float4::div(self.0, rhs.0) })
     }
 
     /// `self % rhs`
-    #[inline]
+    #[inline(always)]
     pub const fn rem_const(self, rhs: Self) -> Self {
         Self(unsafe { float4::rem(self.0, rhs.0) })
     }
 
     /// `(self * a) + b`
-    #[inline]
+    #[inline(always)]
     pub const fn mul_add(self, a: Self, b: Self) -> Self {
         Self(unsafe { float4::fma(self.0, a.0, b.0) })
     }
 
     /// `-self`
-    #[inline]
+    #[inline(always)]
     pub const fn neg_const(self) -> Self {
         Self(self.0 ^ 0x8)
     }
@@ -435,7 +475,7 @@ impl f4 {
 impl Add for f4 {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn add(self, rhs: Self) -> Self::Output {
         self.add_const(rhs)
     }
@@ -444,7 +484,7 @@ impl Add for f4 {
 impl Mul for f4 {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn mul(self, rhs: Self) -> Self::Output {
         self.mul_const(rhs)
     }
@@ -453,7 +493,7 @@ impl Mul for f4 {
 impl Sub for f4 {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn sub(self, rhs: Self) -> Self::Output {
         self.sub_const(rhs)
     }
@@ -462,7 +502,7 @@ impl Sub for f4 {
 impl Div for f4 {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn div(self, rhs: Self) -> Self::Output {
         self.div_const(rhs)
     }
@@ -471,7 +511,7 @@ impl Div for f4 {
 impl Rem for f4 {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn rem(self, rhs: Self) -> Self::Output {
         self.rem_const(rhs)
     }
@@ -480,7 +520,7 @@ impl Rem for f4 {
 impl Neg for f4 {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn neg(self) -> Self::Output {
         self.neg_const()
     }
