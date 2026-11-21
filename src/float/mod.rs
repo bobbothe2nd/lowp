@@ -52,6 +52,43 @@ impl_constants!(bf8);
 impl_constants!(bf8uz);
 impl_constants!(f4);
 
+macro_rules! impl_cvt {
+    ($($ty:ident <-> $out_ty:ty)*) => {$(
+        impl From<$ty> for $out_ty {
+            fn from(val: $ty) -> Self {
+                Self::from_f32(val.to_f32())
+            }
+        }
+        impl From<$out_ty> for $ty {
+            fn from(val: $out_ty) -> Self {
+                Self::from_f32(val.to_f32())
+            }
+        }
+    )*};
+}
+
+impl_cvt!(
+    hf8 <-> hf8fn
+    hf8 <-> hf8uz
+    hf8 <-> bf8
+    hf8 <-> bf8uz
+
+    hf8fn <-> hf8uz
+    hf8fn <-> bf8
+    hf8fn <-> bf8uz
+
+    bf8 <-> hf8uz
+    bf8 <-> bf8uz
+
+    bf8uz <-> hf8uz
+
+    f4 <-> hf8
+    f4 <-> hf8fn
+    f4 <-> hf8uz
+    f4 <-> bf8
+    f4 <-> bf8uz
+);
+
 macro_rules! impl_io {
     ($t:ident) => {
         impl ::core::fmt::Display for $t {
