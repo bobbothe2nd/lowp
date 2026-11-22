@@ -1,6 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask},
-    round_shift_u64, NO_INF,
+    NO_INF, ops::{encode_finite, encode_zero, is_nan, sign_mask},
 };
 
 #[inline(always)]
@@ -24,15 +23,15 @@ pub const fn fma<
         return NAN;
     }
 
-    let sign_mask = const { sign_mask::<W>() };
+    let sm = const { sign_mask::<W>() };
 
-    let a_abs = a & !sign_mask;
-    let b_abs = b & !sign_mask;
-    let c_abs = c & !sign_mask;
+    let a_abs = a & !sm;
+    let b_abs = b & !sm;
+    let c_abs = c & !sm;
 
-    let a_sign = a & sign_mask;
-    let b_sign = b & sign_mask;
-    let c_sign = c & sign_mask;
+    let a_sign = a & sm;
+    let b_sign = b & sm;
+    let c_sign = c & sm;
 
     let product_sign = a_sign ^ b_sign;
 
@@ -64,11 +63,10 @@ pub const fn fma<
 
     if a_zero || b_zero {
         if c_zero {
-            return if product_sign == c_sign {
-                product_sign
-            } else {
-                0
-            };
+            if c_zero {
+                let negative = product_sign == c_sign && product_sign != 0;
+                return encode_zero::<W, NAN>(negative);
+            }
         }
 
         return c;
@@ -86,29 +84,29 @@ pub const fn fma<
     let c_frac = c_abs & frac_mask;
 
     let (a_sig, a_power) = if a_exp == 0 {
-        (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (a_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | a_frac as u64,
-            a_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | a_frac as u64,
+            a_exp as i32 - B as i32 - F as i32,
         )
     };
 
     let (b_sig, b_power) = if b_exp == 0 {
-        (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (b_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | b_frac as u64,
-            b_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | b_frac as u64,
+            b_exp as i32 - B as i32 - F as i32,
         )
     };
 
     let (c_sig, c_power) = if c_exp == 0 {
-        (c_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (c_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | c_frac as u64,
-            c_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | c_frac as u64,
+            c_exp as i32 - B as i32 - F as i32,
         )
     };
 
@@ -129,84 +127,21 @@ pub const fn fma<
         c_sig << (c_power - base_power) as u32
     };
 
-    let (magnitude, sign) = if product_sign == c_sign || c_zero {
-        (product + addend, product_sign)
+    let (magnitude, negative) = if product_sign == c_sign || c_zero {
+        (product + addend, product_sign != 0)
     } else if product >= addend {
-        (product - addend, product_sign)
+        (product - addend, product_sign != 0)
     } else {
-        (addend - product, c_sign)
+        (addend - product, c_sign != 0)
     };
 
     if magnitude == 0 {
         return 0;
     }
 
-    let result_hi = 63 - magnitude.leading_zeros();
-    let unbiased_exp = result_hi as i32 + base_power;
-
-    let min_normal_exp = const { 1 - B as i32 };
-    let min_subnormal_power = min_normal_exp - F as i32;
-
-    if unbiased_exp < min_normal_exp {
-        let shift = min_subnormal_power - base_power;
-
-        let sig = if shift > 0 {
-            round_shift_u64(magnitude, shift as u32)
-        } else {
-            magnitude << (-shift) as u32
-        };
-
-        if sig == 0 {
-            return sign;
-        }
-
-        if sig >= const { 1u64 << F } {
-            return sign | const { 1u8 << F };
-        }
-
-        return sign | sig as u8;
-    }
-
-    let mut target_exp = unbiased_exp;
-
-    let shift = result_hi as i32 - F as i32;
-
-    let mut sig = if shift > 0 {
-        round_shift_u64(magnitude, shift as u32)
-    } else {
-        magnitude << (-shift) as u32
-    };
-
-    if sig >= (1u64 << (F + 1)) {
-        sig >>= 1;
-        target_exp += 1;
-    }
-
-    let max_exp = if const { INF != NO_INF } {
-        (1u32 << E) - 2
-    } else {
-        (1u32 << E) - 1
-    };
-
-    let encoded_exp = target_exp + B as i32;
-
-    if encoded_exp > max_exp as i32 {
-        return if const { INF != NO_INF } {
-            sign | INF
-        } else {
-            sign | MAX
-        };
-    }
-
-    let encoded = ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
-
-    if encoded > MAX {
-        return if const { INF != NO_INF } {
-            sign | INF
-        } else {
-            sign | MAX
-        };
-    }
-
-    sign | encoded
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(
+        negative,
+        magnitude,
+        base_power,
+    )
 }

@@ -21,12 +21,109 @@ Provides an extensive set of small float formats:
 - `zerocopy`: Implement traits from `zerocopy` including `AsBytes` and `FromBytes`
 - `stable_auto`: Implement trait from `stable_auto` including `Auto`
 - `lut-f4`: Use highly optimized LUT for `f4` operations at the cost of 4 KiB of static storage
-- `lut-hf6`: Use highly optimized LUT for `hf6` operations at the cost of ? of static storage
-- `lut-bf6`: Use highly optimized LUT for `bf6` operations at the cost of ? of static storage
 
 ## Conversion
 
-All `lowp` float types can be converted to/from any other `lowp` float types and both `core` and `half` float types.
+All `lowp` float types can be converted to/from all other `lowp` float types and both `core` and `half` float types.
+
+## Example
+
+Where possible, these float types match the standard library as closely as possible.
+
+```rust
+use lowp::*;
+
+// scalar construction
+let a = bf6::from_f32(1.5);
+let b = hf6::from_f32(2.25);
+
+let c = bf8::from_f32(3.5);
+let d = bf8uz::from_f32(4.5);
+
+let e = hf8::from_f32(5.5);
+let f = hf8fn::from_f32(6.5);
+let g = hf8uz::from_f32(7.5);
+
+let h = f4::from_f32(0.5);
+
+println!("bf6:   {a}");
+println!("hf6:   {b}");
+println!("bf8:   {c}");
+println!("bf8uz: {d}");
+println!("hf8:   {e}");
+println!("hf8fn: {f}");
+println!("hf8uz: {g}");
+println!("f4:    {h}");
+
+// raw bit representations
+let raw = bf8::from_bits(0x3F);
+
+println!("bf8 bits: {:#04X}", raw.to_bits());
+
+// scalar arithmetic
+let x = hf8fn::from_f32(2.0);
+let y = hf8fn::from_f32(3.0);
+let z = hf8fn::from_f32(4.0);
+
+println!("add:     {}", x + y);
+println!("sub:     {}", x - y);
+println!("mul:     {}", x * y);
+println!("div:     {}", x / y);
+println!("rem:     {}", x % y);
+println!("mul_add: {}", x.mul_add(y, z));
+
+// classification
+println!("is_nan:    {}", x.is_nan());
+println!("is_finite: {}", x.is_finite());
+println!("is_sign_positive: {}", x.is_sign_positive());
+println!("is_sign_negative: {}", x.is_sign_negative());
+
+// vector construction
+let bf6_vec = bf6x4::from_array([
+    bf6::from_bits(0x00),
+    bf6::from_bits(0x01),
+    bf6::from_bits(0x02),
+    bf6::from_bits(0x03),
+]);
+let hf6_vec = hf6x4::from_array([
+    hf6::from_bits(0x00),
+    hf6::from_bits(0x01),
+    hf6::from_bits(0x02),
+    hf6::from_bits(0x03),
+]);
+let f4_vec = f4x2::new(f4::from_bits(0x0), f4::from_bits(0x1));
+
+println!("bf6x4: {bf6_vec:?}");
+println!("hf6x4: {hf6_vec:?}");
+println!("f4x2:  {f4_vec:?}");
+```
+
+which outputs:
+
+```text
+bf6:   1.5
+hf6:   2.25
+bf8:   3.5
+bf8uz: 4
+hf8:   5.5
+hf8fn: 6.5
+hf8uz: 7.5
+f4:    0.5
+bf8 bits: 0x3F
+add:     5
+sub:     -1
+mul:     6
+div:     0.6875
+rem:     2
+mul_add: 10
+is_nan:    false
+is_finite: true
+is_sign_positive: true
+is_sign_negative: false
+bf6x4: bf6x4[0.0, 0.0625, 0.125, 0.1875]
+hf6x4: hf6x4[0.0, 0.125, 0.25, 0.375]
+f4x2:  f4x2[0.0, 0.5]
+```
 
 ## Performance
 
@@ -102,16 +199,12 @@ Comparing median throughput, `lowp` achieves the following speedups:
 
 The optimizations differ depending on the floating-point format.
 
-**F8E4M3 (8-bit floating point)**
+> **F8E4M3 (8-bit & 6-bit floating point)**
+>
+> While `float8` converts to/from larger floats as intermediate representations, `lowp` implements each operation as software bit manipulation. This has proven to improve performance up to 2x in many cases. This is likely to get faster with new updates.
 
-While `float8` converts to/from larger floats as intermediate representations, `lowp` implements each operation as software bit manipulation. This has proven to improve performance up to 2x in many cases. This is likely to get faster with new updates.
+> **F4E2M1 (4-bit floating point)**
+> 
+> Since `f4` has just 16 possible values, a lookup table for each operation has reasonable size. This is exactly how `lowp` achieves almost 60x the throughput of `float4`. This comes at a cost though; 4KiB of static data. In cases where this tradeoff is acceptable, `lowp` offers exceptional performance. If it isn't acceptable, just disable the `lut-f4` feature to use bit-manipulation-based arithmetic.
 
-**F4E2M1 (4-bit floating point)**
-
-Since `f4` has just 16 possible values, a lookup table for each operation has reasonable size. This is exactly how `lowp` achieves almost 60x the throughput of `float4`. This comes at a cost though; HUGE amounts of static data. In cases where this tradeoff is acceptable, `lowp` offers exceptional performance.
-
-In practive, the static data usage isn't even that bad:
-
-- `LUT_F4`: 4KiB
-
-for a total of 5376 bytes.
+Regardless, the implementation NEVER converts to/from other floats implicitly.

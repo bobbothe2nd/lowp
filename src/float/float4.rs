@@ -1,16 +1,11 @@
 use core::{
-    cmp::Ordering,
-    hint::assert_unchecked,
-    ops::{Add, Div, Mul, Neg, Rem, Sub},
+    cmp::Ordering, fmt::{self, Debug, Formatter}, hint::assert_unchecked, ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 
 use crate::{bit::float4, float::FloatFormat};
-
-#[cfg(feature = "half")]
-use half::{bf16, f16};
 
 /// Two 4-bit E2M1 floats packed into 1 byte
 ///
@@ -164,6 +159,12 @@ impl f4x2 {
     }
 }
 
+impl Debug for f4x2 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "f4x2[{:?}, {:?}]", self.lo(), self.hi())
+    }
+}
+
 /// 4-bit E2M1 float with 4 padding bits
 ///
 /// This format can represent 16 distinct values ranging from -6.0 to 6.0, including:
@@ -179,7 +180,7 @@ impl f4x2 {
 pub struct f4(u8);
 
 impl f4 {
-    pub(super) const FORMAT: FloatFormat = FloatFormat {
+    pub(crate) const FORMAT: FloatFormat = FloatFormat {
         width: 4,
         exp: 2,
         frac: 1,
@@ -246,53 +247,61 @@ impl f4 {
         self.0
     }
 
-    /// Losslessly converts this type into a [`struct@f16`] type.
-    #[inline]
-    #[cfg(feature = "half")]
-    pub const fn from_f16(x: f16) -> Self {
-        Self(float4::from_f16(x))
-    }
-
-    /// Losslessly converts this type into a [`struct@f16`] type.
-    #[inline]
-    #[cfg(feature = "half")]
-    pub const fn to_f16(self) -> f16 {
-        unsafe { float4::to_f16(self.0) }
-    }
-
-    /// Losslessly converts this type into a [`struct@bf16`] type.
-    #[inline]
-    #[cfg(feature = "half")]
-    pub const fn from_bf16(x: bf16) -> Self {
-        Self(float4::from_bf16(x))
-    }
-
-    /// Losslessly converts this type into a [`struct@bf16`] type.
-    #[inline]
-    #[cfg(feature = "half")]
-    pub const fn to_bf16(self) -> bf16 {
-        unsafe { float4::to_bf16(self.0) }
-    }
-
     /// Losslessly converts this type into a [`prim@f32`] type.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let a = f4::from_f32(1.5);
+    /// let b = a.to_f32();
+    /// assert_eq!(b, 1.5);
+    /// ```
     #[inline]
     pub const fn from_f32(x: f32) -> Self {
         Self(float4::from_f32(x))
     }
 
     /// Losslessly converts this type into a [`prim@f32`] type.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let a = f4::from_f32(1.5);
+    /// let b = a.to_f32();
+    /// assert_eq!(b, 1.5);
+    /// ```
     #[inline]
     pub const fn to_f32(self) -> f32 {
         unsafe { float4::to_f32(self.0) }
     }
 
     /// Losslessly converts this type into a [`prim@f64`] type.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let a = f4::from_f64(1.5);
+    /// let b = a.to_f64();
+    /// assert_eq!(b, 1.5);
+    /// ```
     #[inline]
     pub const fn from_f64(x: f64) -> Self {
         Self(float4::from_f64(x))
     }
 
     /// Losslessly converts this type into a [`prim@f64`] type.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let a = f4::from_f64(1.5);
+    /// let b = a.to_f64();
+    /// assert_eq!(b, 1.5);
+    /// ```
     #[inline]
     pub const fn to_f64(self) -> f64 {
         unsafe { float4::to_f64(self.0) }
@@ -492,12 +501,14 @@ impl f4 {
 
     /// Euclidean division `self / rhs`
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn div_euclid(self, rhs: Self) -> Self {
         Self(unsafe { float4::div_euclid(self.0, rhs.0) })
     }
 
     /// Euclidean remainder `self % rhs`
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn rem_euclid(self, rhs: Self) -> Self {
         Self(unsafe { float4::rem_euclid(self.0, rhs.0) })
     }
@@ -511,6 +522,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).log(f4::from_f32(3.0)), f4::from_f32(1.631));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn log(self, base: Self) -> Self {
         Self(unsafe { float4::log(self.0, base.0) })
     }
@@ -524,6 +536,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(4.0).atan2(f4::from_f32(3.0)), f4::from_f32(0.927));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn atan2(self, rhs: Self) -> Self {
         Self(unsafe { float4::atan2(self.0, rhs.0) })
     }
@@ -538,6 +551,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(3.0).powf(f4::from_f32(2.0)), f4::from_f32(6.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn powf(self, rhs: Self) -> Self {
         Self(unsafe { float4::powf(self.0, rhs.0) })
     }
@@ -554,6 +568,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(-4.0).hypot(f4::from_f32(-3.0)), f4::from_f32(5.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn hypot(self, rhs: Self) -> Self {
         Self(unsafe { float4::hypot(self.0, rhs.0) })
     }
@@ -567,6 +582,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).midpoint(f4::from_f32(-4.0)), f4::from_f32(1.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn midpoint(self, rhs: Self) -> Self {
         Self(unsafe { float4::midpoint(self.0, rhs.0) })
     }
@@ -580,6 +596,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(4.0).cos(), f4::from_f32(-0.653));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn cos(self) -> Self {
         Self(unsafe { float4::cos(self.0) })
     }
@@ -593,6 +610,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(2.0).sin(), f4::from_f32(0.909));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn sin(self) -> Self {
         Self(unsafe { float4::sin(self.0) })
     }
@@ -606,6 +624,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(0.5).acos(), f4::from_f32(1.047));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn acos(self) -> Self {
         Self(unsafe { float4::acos(self.0) })
     }
@@ -619,6 +638,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(-0.5).asin(), f4::from_f32(-0.523));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn asin(self) -> Self {
         Self(unsafe { float4::asin(self.0) })
     }
@@ -632,6 +652,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(2.0).acosh(), f4::from_f32(1.317));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn acosh(self) -> Self {
         Self(unsafe { float4::acosh(self.0) })
     }
@@ -645,6 +666,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(0.5).asinh(), f4::from_f32(0.481));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn asinh(self) -> Self {
         Self(unsafe { float4::asinh(self.0) })
     }
@@ -658,6 +680,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).ln(), f4::from_f32(1.791));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn ln(self) -> Self {
         Self(unsafe { float4::ln(self.0) })
     }
@@ -671,6 +694,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).ln_1p(), f4::from_f32(1.945));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn ln_1p(self) -> Self {
         Self(unsafe { float4::ln_1p(self.0) })
     }
@@ -684,6 +708,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).log2(), f4::from_f32(2.584));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn log2(self) -> Self {
         Self(unsafe { float4::log2(self.0) })
     }
@@ -697,6 +722,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).log10(), f4::from_f32(0.778));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn log10(self) -> Self {
         Self(unsafe { float4::log10(self.0) })
     }
@@ -710,6 +736,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).tan(), f4::from_f32(-0.291));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn tan(self) -> Self {
         Self(unsafe { float4::tan(self.0) })
     }
@@ -723,6 +750,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).tanh(), f4::from_f32(1.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn tanh(self) -> Self {
         Self(unsafe { float4::tanh(self.0) })
     }
@@ -736,6 +764,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).atan(), f4::from_f32(1.405));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn atan(self) -> Self {
         Self(unsafe { float4::atan(self.0) })
     }
@@ -749,6 +778,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(0.5).atanh(), f4::from_f32(0.549));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn atanh(self) -> Self {
         Self(unsafe { float4::atanh(self.0) })
     }
@@ -762,6 +792,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(1.5).exp(), f4::from_f32(4.481));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn exp(self) -> Self {
         Self(unsafe { float4::exp(self.0) })
     }
@@ -775,6 +806,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(2.0).exp2(), f4::from_f32(4.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn exp2(self) -> Self {
         Self(unsafe { float4::exp2(self.0) })
     }
@@ -788,6 +820,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(1.5).exp_m1(), f4::from_f32(3.481));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn exp_m1(self) -> Self {
         Self(unsafe { float4::exp_m1(self.0) })
     }
@@ -801,6 +834,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(4.0).sqrt(), f4::from_f32(2.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn sqrt(self) -> Self {
         Self(unsafe { float4::sqrt(self.0) })
     }
@@ -814,6 +848,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).cbrt(), f4::from_f32(1.817));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn cbrt(self) -> Self {
         Self(unsafe { float4::cbrt(self.0) })
     }
@@ -827,6 +862,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(2.0).recip(), f4::from_f32(0.5));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn recip(self) -> Self {
         Self(unsafe { float4::recip(self.0) })
     }
@@ -840,6 +876,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(2.5).floor(), f4::from_f32(2.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn floor(self) -> Self {
         Self(unsafe { float4::floor(self.0) })
     }
@@ -853,6 +890,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(1.5).ceil(), f4::from_f32(2.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn ceil(self) -> Self {
         Self(unsafe { float4::ceil(self.0) })
     }
@@ -866,6 +904,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(1.5).floor(), f4::from_f32(1.0));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn trunc(self) -> Self {
         Self(unsafe { float4::trunc(self.0) })
     }
@@ -880,6 +919,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(0.5).to_degrees(), f4::from_f32(28.647));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn to_degrees(self) -> Self {
         Self(unsafe { float4::to_degrees(self.0) })
     }
@@ -894,6 +934,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(6.0).to_radians(), f4::from_f32(0.104));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn to_radians(self) -> Self {
         Self(unsafe { float4::to_radians(self.0) })
     }
@@ -907,6 +948,7 @@ impl f4 {
     /// assert_eq!(f4::from_f32(1.5).fract(), f4::from_f32(0.5));
     /// ```
     #[inline(always)]
+    #[cfg(feature = "lut-f4")]
     pub const fn fract(self) -> Self {
         Self(unsafe { float4::fract(self.0) })
     }

@@ -184,11 +184,6 @@ pub const fn from_f32<
     };
 
     let min_normal_exp = const { 1 - B as i32 };
-    let min_subnormal_exp = min_normal_exp - F as i32;
-
-    if exponent < min_subnormal_exp {
-        return sign;
-    }
 
     if exponent < min_normal_exp {
         let shift = (24 - B as i32 - F as i32 - exponent) as u32;
@@ -291,11 +286,6 @@ pub const fn from_f64<
     };
 
     let min_normal_exp = const { 1 - B as i32 };
-    let min_subnormal_exp = min_normal_exp - F as i32;
-
-    if exponent < min_subnormal_exp {
-        return sign;
-    }
 
     if exponent < min_normal_exp {
         let shift = (53 - B as i32 - F as i32 - exponent) as u32;

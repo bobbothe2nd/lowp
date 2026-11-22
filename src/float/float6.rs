@@ -115,6 +115,12 @@ macro_rules! impl_float6 {
             }
         }
 
+        impl ::core::fmt::Debug for $vec {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                write!(f, "{}[{:?}, {:?}, {:?}, {:?}]", stringify!($vec), self.get::<0>(), self.get::<1>(), self.get::<2>(), self.get::<3>())
+            }
+        }
+
         #[doc = concat!("6-bit floating point value with the ", stringify!($format), " format")]
         #[derive(Clone, Copy, Default, Eq)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize))]
@@ -126,6 +132,31 @@ macro_rules! impl_float6 {
 
         impl $name {
             pub(super) const FORMAT: FloatFormat = $format;
+
+            /// Maximum possible value
+            pub const MAX: Self = Self::from_bits($format.max);
+            /// Largest possible subnormal value
+            pub const MAX_SUBNORMAL: Self = Self::from_bits((1 << $format.frac) - 1);
+            /// Minimum possible value
+            pub const MIN: Self = Self::from_bits($format.max | 0x20);
+            /// Smallest possible positive value
+            pub const MIN_POSITIVE: Self = Self::from_bits(1 << $format.frac);
+            /// Smallest possible subnormal value
+            pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(1);
+            /// One greater than the minimum possible normal power of 2 exponent
+            pub const MIN_EXP: i32 = 2 - ($format.bias as i32);
+            /// Minimum possible normal power of 2 exponent
+            pub const MAX_EXP: i32 = (((1i32 << $format.exp) - 2) - ($format.bias as i32));
+            /// 0
+            pub const ZERO: Self = Self::from_bits(0);
+            /// 0
+            pub const NEG_ZERO: Self = Self::from_bits(0x20);
+            /// 1
+            pub const ONE: Self = Self::from_bits(($format.bias as u8) << $format.frac);
+            /// -1
+            pub const NEG_ONE: Self = Self::from_bits(0x20 | (($format.bias as u8) << $format.frac));
+            /// This is the difference between 1.0 and the next largest representable number.
+            pub const EPSILON: Self = Self::from_bits((($format.bias as u8) - $format.frac) << $format.frac);
 
             /// Construct an 6-bit floating point value from the low bits of the byte.
             pub const fn from_bits(bits: u8) -> Self {
@@ -153,6 +184,358 @@ macro_rules! impl_float6 {
             /// Return the raw bits.
             pub const fn to_bits(self) -> u8 {
                 self.0
+            }
+
+            /// Convert a [`prim@f32`] type into [`Self`].
+            ///
+            /// This operation is lossy.
+            ///
+            /// - If the 32-bit value is to large to fit in 8-bits, ±∞ will result.
+            /// - NaN values are preserved.
+            /// - 64-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
+            /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
+            /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f32(2.5);")]
+            /// let b = a.to_f32();
+            /// assert_eq!(b, 2.5);
+            /// ```
+            #[inline]
+            pub const fn from_f32(x: f32) -> Self {
+                Self($crate::bit::cvt::from_f32::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(x))
+            }
+
+            /// Converts this type into a [`prim@f32`] type.
+            ///
+            /// This operation may be lossy.
+            ///
+            /// - NaN and zero values are preserved.
+            /// - Subnormal values are normalized.
+            /// - Otherwise, the values are mapped to the appropriate 32-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f32(2.5);")]
+            /// let b = a.to_f32();
+            /// assert_eq!(b, 2.5);
+            /// ```
+            #[inline]
+            pub const fn to_f32(self) -> f32 {
+                $crate::bit::cvt::to_f32::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0)
+            }
+
+            /// Convert a [`prim@f64`] type into [`Self`].
+            ///
+            /// This operation is lossy.
+            ///
+            /// - If the 64-bit value is to large to fit in 8-bits, ±∞ will result.
+            /// - NaN values are preserved.
+            /// - 64-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
+            /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
+            /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f64(2.5);")]
+            /// let b = a.to_f64();
+            /// assert_eq!(b, 2.5);
+            /// ```
+            #[inline]
+            pub const fn from_f64(x: f64) -> Self {
+                Self($crate::bit::cvt::from_f64::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(x))
+            }
+
+            /// Converts this type into a [`prim@f64`] type.
+            ///
+            /// This operation may be lossy.
+            ///
+            /// - NaN and zero values are preserved.
+            /// - Subnormal values are normalized.
+            /// - Otherwise, the values are mapped to the appropriate 64-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f64(2.5);")]
+            /// let b = a.to_f64();
+            /// assert_eq!(b, 2.5);
+            /// ```
+            #[inline]
+            pub const fn to_f64(self) -> f64 {
+                $crate::bit::cvt::to_f64::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0)
+            }
+
+            /// Returns `true` if and only if `self` has a positive sign, including +0.0, NaNs with a positive sign bit and +∞.
+            #[inline]
+            pub const fn is_sign_positive(self) -> bool {
+                self.0 & 0x20 == 0
+            }
+
+            /// Returns `true` if and only if `self` has a negative sign, including −0.0, NaNs with a negative sign bit and −∞.
+            #[inline]
+            pub const fn is_sign_negative(self) -> bool {
+                self.0 & 0x20 != 0
+            }
+
+            /// `self + rhs`
+            #[inline]
+            pub const fn add_const(self, rhs: Self) -> Self {
+                Self($crate::bit::ops::add::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            /// `self - rhs`
+            #[inline]
+            pub const fn sub_const(self, rhs: Self) -> Self {
+                Self($crate::bit::ops::sub::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            /// `self * rhs`
+            #[inline]
+            pub const fn mul_const(self, rhs: Self) -> Self {
+                Self($crate::bit::ops::mul::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            /// `self / rhs`
+            #[inline]
+            pub const fn div_const(self, rhs: Self) -> Self {
+                Self($crate::bit::ops::div::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            /// `self % rhs`
+            #[inline]
+            pub const fn rem_const(self, rhs: Self) -> Self {
+                Self($crate::bit::ops::rem::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0, rhs.0))
+            }
+
+            /// `(self * a) + b`
+            #[inline]
+            pub const fn mul_add(self, a: Self, b: Self) -> Self {
+                Self($crate::bit::ops::fma::<
+                    { $format.frac },
+                    { $format.exp },
+                    { $format.bias },
+                    { $format.width },
+                    { $format.max },
+                    { $format.nan },
+                    {
+                        match $format.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(self.0, a.0, b.0))
+            }
+
+            /// `-self`
+            #[inline]
+            pub const fn neg_const(self) -> Self {
+                Self(self.0 ^ 0x20)
+            }
+        }
+
+        impl From<f32> for $name {
+            #[inline]
+            fn from(val: f32) -> Self {
+                Self::from_f32(val)
+            }
+        }
+
+        impl From<f64> for $name {
+            #[inline]
+            fn from(val: f64) -> Self {
+                Self::from_f64(val)
+            }
+        }
+
+        impl From<$name> for f32 {
+            #[inline]
+            fn from(val: $name) -> Self {
+                val.to_f32()
+            }
+        }
+
+        impl From<$name> for f64 {
+            #[inline]
+            fn from(val: $name) -> Self {
+                val.to_f64()
+            }
+        }
+
+        impl Add for $name {
+            type Output = Self;
+
+            #[inline]
+            fn add(self, rhs: Self) -> Self {
+                self.add_const(rhs)
+            }
+        }
+
+        impl Sub for $name {
+            type Output = Self;
+
+            #[inline]
+            fn sub(self, rhs: Self) -> Self {
+                self.sub_const(rhs)
+            }
+        }
+
+        impl Mul for $name {
+            type Output = Self;
+
+            #[inline]
+            fn mul(self, rhs: Self) -> Self {
+                self.mul_const(rhs)
+            }
+        }
+
+        impl Div for $name {
+            type Output = Self;
+
+            #[inline]
+            fn div(self, rhs: Self) -> Self {
+                self.div_const(rhs)
+            }
+        }
+
+        impl Rem for $name {
+            type Output = Self;
+
+            #[inline]
+            fn rem(self, rhs: Self) -> Self {
+                self.rem_const(rhs)
+            }
+        }
+
+        impl Neg for $name {
+            type Output = Self;
+
+            #[inline]
+            fn neg(self) -> Self {
+                self.neg_const()
             }
         }
 
@@ -186,6 +569,8 @@ macro_rules! impl_float6 {
                 cmp_key(self.0).cmp(&cmp_key(other.0))
             }
         }
+
+        impl_io!($name);
     };
 }
 

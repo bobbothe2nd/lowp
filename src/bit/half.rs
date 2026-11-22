@@ -1,8 +1,7 @@
 use half::{bf16, f16};
 
 use crate::bit::{
-    float8::{NO_INF, SIGN},
-    round_shift_u64,
+    NO_INF, ops::sign_mask, round_shift_u64,
 };
 
 #[inline(always)]
@@ -10,6 +9,7 @@ pub const fn f8_from_f16<
     const F: u8,
     const E: u8,
     const B: i8,
+    const W: u8,
     const MAX: u8,
     const NAN: u8,
     const INF: u8,
@@ -18,7 +18,7 @@ pub const fn f8_from_f16<
 ) -> u8 {
     let bits = x.to_bits();
 
-    let sign = ((bits >> 8) as u8) & SIGN;
+    let sign = ((bits >> (16 - W)) as u8) & sign_mask::<W>();
     let abs = bits & 0x7fff;
 
     let src_exp = ((bits >> 10) & 0x1f) as u8;
@@ -30,7 +30,7 @@ pub const fn f8_from_f16<
         (1 << E) - 1
     };
 
-    let max_sig = (1 << (F + 1)) - 1;
+    let frac_mask = (1 << F) - 1;
 
     if src_exp == 0x1f {
         if src_frac != 0 {
@@ -84,35 +84,43 @@ pub const fn f8_from_f16<
     let target_exp = exponent + B as i32;
 
     if target_exp > max_exp {
-        return sign | if const { INF == NO_INF } { MAX } else { INF };
+        return sign | MAX;
     }
 
-    let shift = 10 - F;
-    let mut sig = round_shift_u64(mantissa, shift as u32);
+    let mut sig = round_shift_u64(mantissa, (10 - F) as u32);
 
     if sig >= (1u64 << (F + 1)) {
         sig >>= 1;
 
         if target_exp + 1 > max_exp {
-            return sign | ((max_exp << F) as u8) | ((max_sig - 1) as u8);
+            return sign | MAX;
         }
 
-        let encoded = ((target_exp + 1) as u8) << F;
-
-        return sign | encoded | (sig as u8 & ((1 << F) - 1));
+        return sign
+            | (((target_exp + 1) as u8) << F)
+            | (sig as u8 & frac_mask);
     }
 
-    sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
+    sign
+        | ((target_exp as u8) << F)
+        | (sig as u8 & frac_mask)
 }
 
 #[inline(always)]
-pub const fn f8_to_f16<const F: u8, const E: u8, const B: i8, const NAN: u8, const INF: u8>(
+pub const fn f8_to_f16<
+    const F: u8,
+    const E: u8,
+    const B: i8,
+    const W: u8,
+    const NAN: u8,
+    const INF: u8,
+>(
     bits: u8,
 ) -> f16 {
-    let sign = ((bits & SIGN) as u16) << 8;
-    let abs = bits & !SIGN;
+    let sign = ((bits & sign_mask::<W>()) as u16) << (16 - W);
+    let abs = bits & !sign_mask::<W>();
 
-    if const { NAN != SIGN } && abs == NAN {
+    if const { NAN != sign_mask::<W>() } && abs == NAN {
         return f16::from_bits(0x7fff);
     }
 
@@ -161,6 +169,7 @@ pub const fn f8_from_bf16<
     const F: u8,
     const E: u8,
     const B: i8,
+    const W: u8,
     const MAX: u8,
     const NAN: u8,
     const INF: u8,
@@ -169,10 +178,10 @@ pub const fn f8_from_bf16<
 ) -> u8 {
     let bits = x.to_bits();
 
-    let sign = ((bits >> 8) as u8) & SIGN;
+    let sign = ((bits >> (16 - W)) as u8) & sign_mask::<W>();
     let abs = bits & 0x7fff;
 
-    let src_exp = (bits >> 7) & 0xff;
+    let src_exp = ((bits >> 7) & 0xff) as u8;
     let src_frac = bits & 0x007f;
 
     let max_exp = if const { INF != NO_INF } {
@@ -181,7 +190,7 @@ pub const fn f8_from_bf16<
         (1 << E) - 1
     };
 
-    let max_sig = (1 << (F + 1)) - 1;
+    let frac_mask = (1 << F) - 1;
 
     if src_exp == 0xff {
         if src_frac != 0 {
@@ -207,7 +216,7 @@ pub const fn f8_from_bf16<
 
         (mantissa, exponent)
     } else {
-        let mantissa = (SIGN as u16 | src_frac) as u64;
+        let mantissa = (0x80 | src_frac) as u64;
         let exponent = src_exp as i32 - 127;
 
         (mantissa, exponent)
@@ -235,34 +244,43 @@ pub const fn f8_from_bf16<
     let target_exp = exponent + B as i32;
 
     if target_exp > max_exp {
-        return sign | if const { INF == NO_INF } { MAX } else { INF };
+        return sign | MAX;
     }
 
-    let mut sig = round_shift_u64(mantissa, const { 7 - F } as u32);
+    let mut sig = round_shift_u64(mantissa, (7 - F) as u32);
 
     if sig >= (1u64 << (F + 1)) {
         sig >>= 1;
 
         if target_exp + 1 > max_exp {
-            return sign | ((max_exp << F) as u8) | ((max_sig - 1) as u8);
+            return sign | MAX;
         }
 
-        let encoded = ((target_exp + 1) as u8) << F;
-
-        return sign | encoded | (sig as u8 & ((1 << F) - 1));
+        return sign
+            | (((target_exp + 1) as u8) << F)
+            | (sig as u8 & frac_mask);
     }
 
-    sign | ((target_exp as u8) << F) | (sig as u8 & ((1 << F) - 1))
+    sign
+        | ((target_exp as u8) << F)
+        | (sig as u8 & frac_mask)
 }
 
 #[inline(always)]
-pub const fn f8_to_bf16<const F: u8, const E: u8, const B: i8, const NAN: u8, const INF: u8>(
+pub const fn f8_to_bf16<
+    const F: u8,
+    const E: u8,
+    const B: i8,
+    const W: u8,
+    const NAN: u8,
+    const INF: u8,
+>(
     bits: u8,
 ) -> bf16 {
-    let sign = ((bits & SIGN) as u16) << 8;
-    let abs = bits & !SIGN;
+    let sign = ((bits & sign_mask::<W>()) as u16) << (16 - W);
+    let abs = bits & !sign_mask::<W>();
 
-    if const { NAN != SIGN } && abs == NAN {
+    if const { NAN != sign_mask::<W>() } && abs == NAN {
         return bf16::from_bits(0x7fff);
     }
 

@@ -9,6 +9,8 @@ documentation = "https://docs.rs/lowp"
 repository = "https://github.com/bobbothe2nd/lowp"
 
 [features]
+default = ["half"]
+
 # use standard library
 alloc = []
 std = ["num-traits?/std"]
@@ -26,8 +28,6 @@ num-traits = ["dep:num-traits"]
 
 # what LUTs to use
 lut-f4 = []
-lut-hf6 = []
-lut-bf6 = []
 
 [dependencies]
 half = { version = "2.4.1", default-features = false, optional = true }

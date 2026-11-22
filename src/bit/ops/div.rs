@@ -1,5 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask},
+    ops::{is_nan, sign_mask, encode_finite, encode_zero},
     NO_INF,
 };
 
@@ -16,16 +16,19 @@ pub const fn div<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a)
+        || is_nan::<F, E, W, MAX, NAN, INF>(b)
+    {
         return NAN;
     }
 
-    let sign_mask = const { sign_mask::<W>() };
+    let sm = const { sign_mask::<W>() };
 
-    let a_abs = a & !sign_mask;
-    let b_abs = b & !sign_mask;
+    let a_abs = a & !sm;
+    let b_abs = b & !sm;
 
-    let sign = (a ^ b) & sign_mask;
+    let sign = (a ^ b) & sm;
+    let negative = sign != 0;
 
     let a_zero = a_abs == 0;
     let b_zero = b_abs == 0;
@@ -36,27 +39,39 @@ pub const fn div<
 
         if a_inf || b_inf {
             if a_inf && b_inf {
-                return sign_mask | NAN;
+                return if const { NAN != MAX } {
+                    sm
+                } else {
+                    0
+                } | NAN;
             }
 
             if a_inf {
                 return sign | INF;
             }
 
-            return sign;
+            return encode_zero::<W, NAN>(negative);
         }
     }
 
     if b_zero {
         if a_zero {
-            return sign_mask | NAN;
+            return if const { NAN != MAX } {
+                sm
+            } else {
+                0
+            } | NAN;
         }
 
-        return sign | MAX;
+        return if const { INF != NO_INF } {
+            sign | INF
+        } else {
+            sign | MAX
+        };
     }
 
     if a_zero {
-        return sign;
+        return encode_zero::<W, NAN>(negative);
     }
 
     let frac_mask = const { (1u8 << F) - 1 };
@@ -69,20 +84,20 @@ pub const fn div<
     let b_frac = b_abs & frac_mask;
 
     let (a_sig, a_power) = if a_exp == 0 {
-        (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (a_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | a_frac as u64,
-            a_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | a_frac as u64,
+            a_exp as i32 - B as i32 - F as i32,
         )
     };
 
     let (b_sig, b_power) = if b_exp == 0 {
-        (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (b_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | b_frac as u64,
-            b_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | b_frac as u64,
+            b_exp as i32 - B as i32 - F as i32,
         )
     };
 
@@ -97,7 +112,7 @@ pub const fn div<
         ratio_exp -= 1;
     }
 
-    let mut target_exp = power + ratio_exp;
+    let target_exp = power + ratio_exp;
 
     let min_normal_exp = const { 1 - B as i32 };
     let min_subnormal_exp = min_normal_exp - F as i32;
@@ -111,57 +126,26 @@ pub const fn div<
             round_div_u64(a_sig, b_sig << (-scale) as u32)
         };
 
-        if sub_sig == 0 {
-            return sign;
-        }
-
-        if sub_sig >= const { 1u64 << F } {
-            return sign | const { 1u8 << F };
-        }
-
-        return sign | sub_sig as u8;
+        return encode_finite::<F, E, B, W, MAX, NAN, INF>(
+            negative,
+            sub_sig,
+            min_subnormal_exp,
+        );
     }
 
     let scale = power - target_exp + F as i32;
 
-    let mut mantissa = if scale >= 0 {
+    let mantissa = if scale >= 0 {
         round_div_u64(a_sig << scale as u32, b_sig)
     } else {
         round_div_u64(a_sig, b_sig << (-scale) as u32)
     };
 
-    if mantissa >= (1u64 << (F + 1)) {
-        mantissa >>= 1;
-        target_exp += 1;
-    }
-
-    let max_exp = if const { INF != NO_INF } {
-        (1u32 << E) - 2
-    } else {
-        (1u32 << E) - 1
-    };
-
-    let encoded_exp = target_exp + B as i32;
-
-    if encoded_exp > max_exp as i32 {
-        return if const { INF != NO_INF } {
-            sign | INF
-        } else {
-            sign | MAX
-        };
-    }
-
-    let encoded = ((encoded_exp as u8) << F) | (mantissa as u8 & frac_mask);
-
-    if encoded > MAX {
-        return if const { INF != NO_INF } {
-            sign | INF
-        } else {
-            sign | MAX
-        };
-    }
-
-    sign | encoded
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(
+        negative,
+        mantissa,
+        target_exp - F as i32,
+    )
 }
 
 #[inline(always)]
@@ -169,9 +153,9 @@ const fn round_div_u64(num: u64, den: u64) -> u64 {
     let q = num / den;
     let r = num % den;
 
-    let twice_r = r << 1;
+    let complement = den - r;
 
-    if twice_r > den || (twice_r == den && (q & 1) != 0) {
+    if r > complement || (r == complement && (q & 1) != 0) {
         q + 1
     } else {
         q

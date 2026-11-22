@@ -1,6 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask},
-    NO_INF,
+    NO_INF, ops::{encode_finite, is_nan, sign_mask},
 };
 
 #[inline(always)]
@@ -17,35 +16,45 @@ pub const fn addsub<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a)
+        || is_nan::<F, E, W, MAX, NAN, INF>(b)
+    {
         return NAN;
     }
 
-    let sign_mask = const { sign_mask::<W>() };
-    let sign_toggle = if SUB { sign_mask } else { 0 };
+    let sm = const { sign_mask::<W>() };
+    let sign_toggle = if SUB { sm } else { 0 };
 
-    let a_abs = a & !sign_mask;
-    let b_abs = b & !sign_mask;
+    let a_abs = a & !sm;
+    let b_abs = b & !sm;
 
     if const { INF != NO_INF } {
         let a_inf = a_abs == INF;
         let b_inf = b_abs == INF;
 
         if a_inf || b_inf {
-            let sa = a & sign_mask;
-            let sb = (b & sign_mask) ^ sign_toggle;
+            let sa = a & sm;
+            let sb = (b & sm) ^ sign_toggle;
 
             if a_inf && b_inf && sa != sb {
                 return NAN;
             }
 
-            return if a_inf { a } else { b ^ sign_toggle };
+            return if a_inf {
+                a
+            } else {
+                b ^ sign_toggle
+            };
         }
     }
 
     if a_abs == 0 {
         if b_abs == 0 {
-            return if SUB { a & !b } else { a & b };
+            return if SUB {
+                a & !b
+            } else {
+                a & b
+            };
         }
 
         return b ^ sign_toggle;
@@ -55,8 +64,8 @@ pub const fn addsub<
         return a;
     }
 
-    let sa = a & sign_mask != 0;
-    let sb = (b & sign_mask != 0) ^ SUB;
+    let sa = (a & sm != 0) ^ false;
+    let sb = (b & sm != 0) ^ SUB;
 
     let mut ma = decode_finite::<F, E>(a_abs);
     let mut mb = decode_finite::<F, E>(b_abs);
@@ -75,49 +84,11 @@ pub const fn addsub<
         return 0;
     }
 
-    let sign = if sum < 0 { sign_mask } else { 0 };
-    let q = sum.unsigned_abs();
-
-    if q < const { 1 << F } {
-        return sign | q as u8;
-    }
-
-    let h = 63 - q.leading_zeros();
-    let shift = h - (F as u32);
-
-    let mut mantissa = q >> shift;
-
-    if shift != 0 {
-        let remainder_mask = (1 << shift) - 1;
-        let remainder = q & remainder_mask;
-        let halfway = 1 << (shift - 1);
-
-        if remainder > halfway || (remainder == halfway && (mantissa & 1) != 0) {
-            mantissa += 1;
-        }
-    }
-
-    let mut exponent = h as i32 - (B as i32 + F as i32 - 1);
-
-    if mantissa >= (1 << (F + 1)) {
-        mantissa >>= 1;
-        exponent += 1;
-    }
-
-    let encoded_exp = exponent + B as i32;
-    let max_exp = ((1u16 << E) - 1) as i32;
-
-    if encoded_exp > max_exp {
-        return sign | MAX;
-    }
-
-    let encoded = ((encoded_exp as u8) << F) | (mantissa - const { 1 << F }) as u8;
-
-    if encoded > MAX {
-        return sign | MAX;
-    }
-
-    sign | encoded
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(
+        sum < 0,
+        sum.unsigned_abs(),
+        1 - B as i32 - F as i32,
+    )
 }
 
 #[inline(always)]

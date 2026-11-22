@@ -13,8 +13,12 @@ const fn round_shift_u64(x: u64, shift: u32) -> u64 {
         return x;
     }
 
-    if shift >= 64 {
+    if shift > 64 {
         return 0;
+    }
+
+    if shift == 64 {
+        return if x > (1u64 << 63) { 1 } else { 0 };
     }
 
     let truncated = x >> shift;

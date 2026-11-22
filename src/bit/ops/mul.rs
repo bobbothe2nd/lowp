@@ -1,6 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask},
-    round_shift_u64, NO_INF,
+    NO_INF, ops::{encode_finite, encode_zero, is_nan, sign_mask},
 };
 
 #[inline(always)]
@@ -16,16 +15,19 @@ pub const fn mul<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a)
+        || is_nan::<F, E, W, MAX, NAN, INF>(b)
+    {
         return NAN;
     }
 
-    let sign_mask = const { sign_mask::<W>() };
+    let sm = const { sign_mask::<W>() };
 
-    let a_abs = a & !sign_mask;
-    let b_abs = b & !sign_mask;
+    let a_abs = a & !sm;
+    let b_abs = b & !sm;
 
-    let sign = (a ^ b) & sign_mask;
+    let sign = (a ^ b) & sm;
+    let negative = sign != 0;
 
     let a_zero = a_abs == 0;
     let b_zero = b_abs == 0;
@@ -36,7 +38,7 @@ pub const fn mul<
 
         if a_inf || b_inf {
             if (a_inf && b_zero) || (b_inf && a_zero) {
-                return sign | NAN;
+                return NAN;
             }
 
             return sign | INF;
@@ -44,7 +46,7 @@ pub const fn mul<
     }
 
     if a_zero || b_zero {
-        return sign;
+        return encode_zero::<W, NAN>(negative);
     }
 
     let frac_mask = const { (1u8 << F) - 1 };
@@ -57,77 +59,26 @@ pub const fn mul<
     let b_frac = b_abs & frac_mask;
 
     let (a_sig, a_power) = if a_exp == 0 {
-        (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (a_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | a_frac as u64,
-            a_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | a_frac as u64,
+            a_exp as i32 - B as i32 - F as i32,
         )
     };
 
     let (b_sig, b_power) = if b_exp == 0 {
-        (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (b_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | b_frac as u64,
-            b_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | b_frac as u64,
+            b_exp as i32 - B as i32 - F as i32,
         )
     };
 
-    let product = a_sig * b_sig;
-    let power = a_power + b_power;
-
-    let product_hi = 63 - product.leading_zeros();
-
-    let min_normal_exp = const { 1 - B as i32 };
-    let min_subnormal_exp = min_normal_exp - F as i32;
-
-    if product_hi as i32 + power < min_normal_exp {
-        let shift = min_subnormal_exp - power;
-
-        let sig = if shift > 0 {
-            round_shift_u64(product, shift as u32)
-        } else {
-            product << (-shift) as u32
-        };
-
-        if sig >= const { 1u64 << F } {
-            return sign | const { 1u8 << F };
-        }
-
-        return sign | sig as u8;
-    }
-
-    let max_exp = if const { INF != NO_INF } {
-        (1u32 << E) - 2
-    } else {
-        (1u32 << E) - 1
-    };
-
-    let mut target_exp = product_hi as i32 + power;
-
-    let mut sig = if product_hi > F as u32 {
-        round_shift_u64(product, product_hi - F as u32)
-    } else {
-        product << (F as u32 - product_hi)
-    };
-
-    if sig >= (1u64 << (F + 1)) {
-        sig >>= 1;
-        target_exp += 1;
-    }
-
-    let encoded_exp = target_exp + B as i32;
-
-    if encoded_exp > max_exp as i32 {
-        return sign | MAX;
-    }
-
-    let encoded = ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
-
-    if encoded > MAX {
-        return sign | MAX;
-    }
-
-    sign | encoded
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(
+        negative,
+        a_sig * b_sig,
+        a_power + b_power,
+    )
 }

@@ -143,6 +143,15 @@ macro_rules! impl_float8 {
             /// - 64-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
             /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
             /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f32(2.5);")]
+            /// let b = a.to_f32();
+            /// assert_eq!(b, 2.5);
+            /// ```
             #[inline]
             pub const fn from_f32(x: f32) -> Self {
                 Self($crate::bit::cvt::from_f32::<
@@ -168,6 +177,15 @@ macro_rules! impl_float8 {
             /// - NaN and zero values are preserved.
             /// - Subnormal values are normalized.
             /// - Otherwise, the values are mapped to the appropriate 32-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f32(2.5);")]
+            /// let b = a.to_f32();
+            /// assert_eq!(b, 2.5);
+            /// ```
             #[inline]
             pub const fn to_f32(self) -> f32 {
                 $crate::bit::cvt::to_f32::<
@@ -194,6 +212,15 @@ macro_rules! impl_float8 {
             /// - 64-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
             /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
             /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f64(2.5);")]
+            /// let b = a.to_f64();
+            /// assert_eq!(b, 2.5);
+            /// ```
             #[inline]
             pub const fn from_f64(x: f64) -> Self {
                 Self($crate::bit::cvt::from_f64::<
@@ -219,6 +246,15 @@ macro_rules! impl_float8 {
             /// - NaN and zero values are preserved.
             /// - Subnormal values are normalized.
             /// - Otherwise, the values are mapped to the appropriate 64-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f64(2.5);")]
+            /// let b = a.to_f64();
+            /// assert_eq!(b, 2.5);
+            /// ```
             #[inline]
             pub const fn to_f64(self) -> f64 {
                 $crate::bit::cvt::to_f64::<
@@ -552,7 +588,7 @@ macro_rules! impl_float8 {
             /// `self + rhs`
             #[inline]
             pub const fn add_const(self, rhs: Self) -> Self {
-                Self($crate::bit::ops::add::addsub::<
+                Self($crate::bit::ops::add::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
@@ -565,14 +601,13 @@ macro_rules! impl_float8 {
                             None => $crate::bit::NO_INF,
                         }
                     },
-                    false,
                 >(self.0, rhs.0))
             }
 
             /// `self - rhs`
             #[inline]
             pub const fn sub_const(self, rhs: Self) -> Self {
-                Self($crate::bit::ops::add::addsub::<
+                Self($crate::bit::ops::sub::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
@@ -585,14 +620,13 @@ macro_rules! impl_float8 {
                             None => $crate::bit::NO_INF,
                         }
                     },
-                    true,
                 >(self.0, rhs.0))
             }
 
             /// `self * rhs`
             #[inline]
             pub const fn mul_const(self, rhs: Self) -> Self {
-                Self($crate::bit::ops::mul::mul::<
+                Self($crate::bit::ops::mul::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
@@ -611,7 +645,7 @@ macro_rules! impl_float8 {
             /// `self / rhs`
             #[inline]
             pub const fn div_const(self, rhs: Self) -> Self {
-                Self($crate::bit::ops::div::div::<
+                Self($crate::bit::ops::div::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
@@ -630,7 +664,7 @@ macro_rules! impl_float8 {
             /// `self % rhs`
             #[inline]
             pub const fn rem_const(self, rhs: Self) -> Self {
-                Self($crate::bit::ops::rem::rem::<
+                Self($crate::bit::ops::rem::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
@@ -649,7 +683,7 @@ macro_rules! impl_float8 {
             /// `(self * a) + b`
             #[inline]
             pub const fn mul_add(self, a: Self, b: Self) -> Self {
-                Self($crate::bit::ops::fma::fma::<
+                Self($crate::bit::ops::fma::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
@@ -790,14 +824,3 @@ impl_io!(hf8fn);
 impl_io!(hf8uz);
 impl_io!(bf8);
 impl_io!(bf8uz);
-
-#[cfg(feature = "half")]
-impl_half_cvt!(hf8 E4M3);
-#[cfg(feature = "half")]
-impl_half_cvt!(hf8fn E4M3FN);
-#[cfg(feature = "half")]
-impl_half_cvt!(hf8uz E4M3FNUZ);
-#[cfg(feature = "half")]
-impl_half_cvt!(bf8 E5M2);
-#[cfg(feature = "half")]
-impl_half_cvt!(bf8uz E5M2FNUZ);

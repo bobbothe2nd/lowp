@@ -1,5 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask},
+    ops::{is_nan, sign_mask, encode_finite},
     NO_INF,
 };
 
@@ -16,16 +16,19 @@ pub const fn rem<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a)
+        || is_nan::<F, E, W, MAX, NAN, INF>(b)
+    {
         return NAN;
     }
 
-    let sign_mask = const { sign_mask::<W>() };
+    let sm = const { sign_mask::<W>() };
 
-    let a_abs = a & !sign_mask;
-    let b_abs = b & !sign_mask;
+    let a_abs = a & !sm;
+    let b_abs = b & !sm;
 
-    let a_sign = a & sign_mask;
+    let a_sign = a & sm;
+    let negative = a_sign != 0;
 
     let a_zero = a_abs == 0;
     let b_zero = b_abs == 0;
@@ -35,8 +38,12 @@ pub const fn rem<
         let b_inf = b_abs == INF;
 
         if a_inf || b_inf {
-            if a_inf || b_zero {
-                return sign_mask | NAN;
+            if a_inf {
+                return if const { NAN != MAX } {
+                    sm
+                } else {
+                    0
+                } | NAN;
             }
 
             return a;
@@ -44,7 +51,11 @@ pub const fn rem<
     }
 
     if b_zero {
-        return sign_mask | NAN;
+        return if const { NAN != MAX } {
+            sm
+        } else {
+            0
+        } | NAN;
     }
 
     if a_zero {
@@ -61,20 +72,20 @@ pub const fn rem<
     let b_frac = b_abs & frac_mask;
 
     let (a_sig, a_power) = if a_exp == 0 {
-        (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (a_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | a_frac as u64,
-            a_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | a_frac as u64,
+            a_exp as i32 - B as i32 - F as i32,
         )
     };
 
     let (b_sig, b_power) = if b_exp == 0 {
-        (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
+        (b_frac as u64, 1i32 - B as i32 - F as i32)
     } else {
         (
-            (const { 1u64 << F }) | b_frac as u64,
-            b_exp as i32 - const { B as i32 + F as i32 },
+            (1u64 << F) | b_frac as u64,
+            b_exp as i32 - B as i32 - F as i32,
         )
     };
 
@@ -116,60 +127,14 @@ pub const fn rem<
             return a;
         }
 
-        let d = b_sig << shift;
+        let divisor = b_sig << shift;
 
-        (a_sig % d, a_power)
+        (a_sig % divisor, a_power)
     };
 
-    if remainder == 0 {
-        return a_sign;
-    }
-
-    let result_hi = 63 - remainder.leading_zeros();
-    let unbiased_exp = result_hi as i32 + result_power;
-
-    let min_normal_exp = const { 1 - B as i32 };
-    let min_subnormal_exp = min_normal_exp - F as i32;
-
-    // Remainder is exact, so normalization must not round.
-    if unbiased_exp < min_normal_exp {
-        let shift = min_subnormal_exp - result_power;
-
-        let sig = if shift > 0 {
-            remainder >> shift as u32
-        } else {
-            remainder << (-shift) as u32
-        };
-
-        return a_sign | sig as u8;
-    }
-
-    let target_exp = unbiased_exp;
-    let shift = result_hi as i32 - F as i32;
-
-    let sig = if shift > 0 {
-        remainder >> shift as u32
-    } else {
-        remainder << (-shift) as u32
-    };
-
-    let encoded_exp = target_exp + B as i32;
-
-    let max_exp = if const { INF != NO_INF } {
-        (1u32 << E) - 2
-    } else {
-        (1u32 << E) - 1
-    };
-
-    if encoded_exp > max_exp as i32 {
-        return a_sign | MAX;
-    }
-
-    let encoded = ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
-
-    if encoded > MAX {
-        return a_sign | MAX;
-    }
-
-    a_sign | encoded
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(
+        negative,
+        remainder,
+        result_power,
+    )
 }

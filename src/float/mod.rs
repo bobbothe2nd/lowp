@@ -76,12 +76,12 @@ macro_rules! impl_io {
         }
         impl ::core::fmt::LowerHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                ::core::fmt::LowerHex::fmt(&self.0, f)
+                ::core::fmt::LowerHex::fmt(&self.to_bits(), f)
             }
         }
         impl ::core::fmt::UpperHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                ::core::fmt::UpperHex::fmt(&self.0, f)
+                ::core::fmt::UpperHex::fmt(&self.to_bits(), f)
             }
         }
         impl ::core::str::FromStr for $name {
@@ -95,7 +95,7 @@ macro_rules! impl_io {
 
 #[cfg(feature = "half")]
 macro_rules! impl_half_cvt {
-    ($name:ident $format:ident) => {
+    ($name:ident) => {
         impl $name {
             /// Convert a [`struct@f16`] type into [`Self`].
             ///
@@ -106,15 +106,25 @@ macro_rules! impl_half_cvt {
             /// - 16-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
             /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
             /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*; use half::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f16(f16::from_f32(1.5));")]
+            /// let b = a.to_f16();
+            /// assert_eq!(b, f16::from_f32(1.5));
+            /// ```
             pub const fn from_f16(x: ::half::f16) -> Self {
-                Self($crate::bit::half::f8_from_f16::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    { $format.max },
-                    { $format.nan },
+                Self::from_bits($crate::bit::half::f8_from_f16::<
+                    { Self::FORMAT.frac },
+                    { Self::FORMAT.exp },
+                    { Self::FORMAT.bias },
+                    { Self::FORMAT.width },
+                    { Self::FORMAT.max },
+                    { Self::FORMAT.nan },
                     {
-                        match $format.inf {
+                        match Self::FORMAT.inf {
                             Some(v) => v,
                             None => $crate::bit::NO_INF,
                         }
@@ -131,15 +141,25 @@ macro_rules! impl_half_cvt {
             /// - 16-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
             /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
             /// - All other values are truncated and rounded to the nearest representable  8-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*; use half::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_bf16(bf16::from_f32(1.5));")]
+            /// let b = a.to_bf16();
+            /// assert_eq!(b, bf16::from_f32(1.5));
+            /// ```
             pub const fn from_bf16(x: ::half::bf16) -> Self {
-                Self($crate::bit::half::f8_from_bf16::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    { $format.max },
-                    { $format.nan },
+                Self::from_bits($crate::bit::half::f8_from_bf16::<
+                    { Self::FORMAT.frac },
+                    { Self::FORMAT.exp },
+                    { Self::FORMAT.bias },
+                    { Self::FORMAT.width },
+                    { Self::FORMAT.max },
+                    { Self::FORMAT.nan },
                     {
-                        match $format.inf {
+                        match Self::FORMAT.inf {
                             Some(v) => v,
                             None => $crate::bit::NO_INF,
                         }
@@ -154,19 +174,29 @@ macro_rules! impl_half_cvt {
             /// - NaN and zero values are preserved.
             /// - Subnormal values are normalized.
             /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*; use half::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_f16(f16::from_f32(1.5));")]
+            /// let b = a.to_f16();
+            /// assert_eq!(b, f16::from_f32(1.5));
+            /// ```
             pub const fn to_f16(self) -> ::half::f16 {
                 crate::bit::half::f8_to_f16::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    { $format.nan },
+                    { Self::FORMAT.frac },
+                    { Self::FORMAT.exp },
+                    { Self::FORMAT.bias },
+                    { Self::FORMAT.width },
+                    { Self::FORMAT.nan },
                     {
-                        match $format.inf {
+                        match Self::FORMAT.inf {
                             Some(v) => v,
                             None => $crate::bit::NO_INF,
                         }
                     },
-                >(self.0)
+                >(self.to_bits())
             }
 
             /// Converts this type into a [`struct@bf16`] type.
@@ -176,19 +206,29 @@ macro_rules! impl_half_cvt {
             /// - NaN and zero values are preserved.
             /// - Subnormal values are normalized.
             /// - Otherwise, the values are mapped to the appropriate 16-bit value.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*; use half::*;
+            #[doc = concat!("let a = ", stringify!($name), "::from_bf16(bf16::from_f32(1.5));")]
+            /// let b = a.to_bf16();
+            /// assert_eq!(b, bf16::from_f32(1.5));
+            /// ```
             pub const fn to_bf16(self) -> ::half::bf16 {
                 crate::bit::half::f8_to_bf16::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    { $format.nan },
+                    { Self::FORMAT.frac },
+                    { Self::FORMAT.exp },
+                    { Self::FORMAT.bias },
+                    { Self::FORMAT.width },
+                    { Self::FORMAT.nan },
                     {
-                        match $format.inf {
+                        match Self::FORMAT.inf {
                             Some(v) => v,
                             None => $crate::bit::NO_INF,
                         }
                     },
-                >(self.0)
+                >(self.to_bits())
             }
         }
 
@@ -214,6 +254,23 @@ macro_rules! impl_half_cvt {
         }
     };
 }
+
+#[cfg(feature = "half")]
+impl_half_cvt!(f4);
+#[cfg(feature = "half")]
+impl_half_cvt!(hf6);
+#[cfg(feature = "half")]
+impl_half_cvt!(bf6);
+#[cfg(feature = "half")]
+impl_half_cvt!(hf8);
+#[cfg(feature = "half")]
+impl_half_cvt!(hf8fn);
+#[cfg(feature = "half")]
+impl_half_cvt!(hf8uz);
+#[cfg(feature = "half")]
+impl_half_cvt!(bf8);
+#[cfg(feature = "half")]
+impl_half_cvt!(bf8uz);
 
 macro_rules! impl_cvt {
     ($($ty:ident -> $from:ident $to:ident -> $out_ty:ident)*) => {$(
@@ -359,7 +416,7 @@ impl_cvt!(
     hf6 -> from_hf6 to_bf8uz -> bf8uz
 );
 
-struct FloatFormat {
+pub(crate) struct FloatFormat {
     pub width: u8,
     pub exp: u8,
     pub frac: u8,
@@ -370,13 +427,13 @@ struct FloatFormat {
 }
 
 mod float8;
-pub use float8::*;
+pub use float8::{bf8, bf8uz, hf8, hf8fn, hf8uz};
 
 mod float6;
-pub use float6::*;
+pub use float6::{bf6, bf6x4, hf6, hf6x4};
 
 mod float4;
-pub use float4::*;
+pub use float4::{f4, f4x2};
 
 #[cfg(feature = "num-traits")]
 mod num_traits;
