@@ -1,6 +1,6 @@
 macro_rules! impl_constants {
-    ($t:ty) => {
-        impl $t {
+    ($name:ty) => {
+        impl $name {
             /// π
             pub const PI: Self = Self::from_f64(::core::f64::consts::PI);
             /// The full circle constant (τ)
@@ -52,79 +52,42 @@ impl_constants!(bf8);
 impl_constants!(bf8uz);
 impl_constants!(f4);
 
-macro_rules! impl_cvt {
-    ($($ty:ident <-> $out_ty:ty)*) => {$(
-        impl From<$ty> for $out_ty {
-            fn from(val: $ty) -> Self {
-                Self::from_f32(val.to_f32())
-            }
-        }
-        impl From<$out_ty> for $ty {
-            fn from(val: $out_ty) -> Self {
-                Self::from_f32(val.to_f32())
-            }
-        }
-    )*};
-}
-
-impl_cvt!(
-    hf8 <-> hf8fn
-    hf8 <-> hf8uz
-    hf8 <-> bf8
-    hf8 <-> bf8uz
-
-    hf8fn <-> hf8uz
-    hf8fn <-> bf8
-    hf8fn <-> bf8uz
-
-    bf8 <-> hf8uz
-    bf8 <-> bf8uz
-
-    bf8uz <-> hf8uz
-
-    f4 <-> hf8
-    f4 <-> hf8fn
-    f4 <-> hf8uz
-    f4 <-> bf8
-    f4 <-> bf8uz
-);
-
 macro_rules! impl_io {
-    ($t:ident) => {
-        impl ::core::fmt::Display for $t {
+    ($name:ident) => {
+        impl ::core::fmt::Display for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::Display::fmt(&self.to_f32(), f)
             }
         }
-        impl ::core::fmt::Debug for $t {
+        impl ::core::fmt::Debug for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::Debug::fmt(&self.to_f32(), f)
             }
         }
-        impl ::core::str::FromStr for $t {
-            type Err = ::core::num::ParseFloatError;
-            fn from_str(src: &str) -> Result<Self, Self::Err> {
-                f32::from_str(src).map($t::from_f32)
-            }
-        }
-        impl ::core::fmt::LowerExp for $t {
+        impl ::core::fmt::LowerExp for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::LowerExp::fmt(&self.to_f32(), f)
             }
         }
-        impl ::core::fmt::LowerHex for $t {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                ::core::fmt::LowerHex::fmt(&self.0, f)
-            }
-        }
-        impl ::core::fmt::UpperExp for $t {
+        impl ::core::fmt::UpperExp for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::UpperExp::fmt(&self.to_f32(), f)
             }
         }
-        impl ::core::fmt::UpperHex for $t {
+        impl ::core::fmt::LowerHex for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                ::core::fmt::LowerHex::fmt(&self.0, f)
+            }
+        }
+        impl ::core::fmt::UpperHex for $name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::UpperHex::fmt(&self.0, f)
+            }
+        }
+        impl ::core::str::FromStr for $name {
+            type Err = ::core::num::ParseFloatError;
+            fn from_str(src: &str) -> Result<Self, Self::Err> {
+                f32::from_str(src).map($name::from_f32)
             }
         }
     };
@@ -132,8 +95,8 @@ macro_rules! impl_io {
 
 #[cfg(feature = "half")]
 macro_rules! impl_half_cvt {
-    ($t:ident $format:ident) => {
-        impl $t {
+    ($name:ident $format:ident) => {
+        impl $name {
             /// Convert a [`struct@f16`] type into [`Self`].
             ///
             /// This operation is lossy.
@@ -229,23 +192,23 @@ macro_rules! impl_half_cvt {
             }
         }
 
-        impl From<::half::f16> for $t {
+        impl From<::half::f16> for $name {
             fn from(x: ::half::f16) -> Self {
                 Self::from_f16(x)
             }
         }
-        impl From<::half::bf16> for $t {
+        impl From<::half::bf16> for $name {
             fn from(x: ::half::bf16) -> Self {
                 Self::from_bf16(x)
             }
         }
-        impl From<$t> for ::half::f16 {
-            fn from(x: $t) -> Self {
+        impl From<$name> for ::half::f16 {
+            fn from(x: $name) -> Self {
                 x.to_f16()
             }
         }
-        impl From<$t> for ::half::bf16 {
-            fn from(x: $t) -> Self {
+        impl From<$name> for ::half::bf16 {
+            fn from(x: $name) -> Self {
                 x.to_bf16()
             }
         }
@@ -260,3 +223,67 @@ pub use self::float4::*;
 
 #[cfg(feature = "num-traits")]
 mod num_traits;
+
+macro_rules! impl_cvt {
+    ($($ty:ident -> $from:ident $cvt:ident -> $out_ty:ident)*) => {$(
+        impl $out_ty {
+            /// Converts 
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($ty), "::from_f32(2.0);")]
+            #[doc = concat!("let b = ", stringify!($out_ty), "::from_", stringify!($ty), "(a);")]
+            #[doc = concat!("assert_eq!(a.to_", stringify!($out_ty), "(), b);")]
+            /// ```
+            pub const fn $from(val: $ty) -> Self {
+                val.$cvt()
+            }
+
+        }
+        impl From<$ty> for $out_ty {
+            fn from(val: $ty) -> Self {
+                val.$cvt()
+            }
+        }
+    )*};
+}
+
+impl_cvt!(
+    hf8 -> from_hf8 to_f4 -> f4
+    hf8 -> from_hf8 to_hf8fn -> hf8fn
+    hf8 -> from_hf8 to_hf8uz -> hf8uz
+    hf8 -> from_hf8 to_bf8 -> bf8
+    hf8 -> from_hf8 to_bf8uz -> bf8uz
+
+    hf8fn -> from_hf8fn to_f4 -> f4
+    hf8fn -> from_hf8fn to_hf8 -> hf8
+    hf8fn -> from_hf8fn to_hf8uz -> hf8uz
+    hf8fn -> from_hf8fn to_bf8 -> bf8
+    hf8fn -> from_hf8fn to_bf8uz -> bf8uz
+
+    hf8uz -> from_hf8uz to_f4 -> f4
+    hf8uz -> from_hf8uz to_hf8 -> hf8
+    hf8uz -> from_hf8uz to_hf8fn -> hf8fn
+    hf8uz -> from_hf8uz to_bf8 -> bf8
+    hf8uz -> from_hf8uz to_bf8uz -> bf8uz
+
+    bf8 -> from_bf8 to_f4 -> f4
+    bf8 -> from_bf8 to_hf8 -> hf8
+    bf8 -> from_bf8 to_hf8fn -> hf8fn
+    bf8 -> from_bf8 to_hf8uz -> hf8uz
+    bf8 -> from_bf8 to_bf8uz -> bf8uz
+
+    bf8uz -> from_bf8uz to_f4 -> f4
+    bf8uz -> from_bf8uz to_hf8 -> hf8
+    bf8uz -> from_bf8uz to_hf8fn -> hf8fn
+    bf8uz -> from_bf8uz to_bf8 -> bf8
+    bf8uz -> from_bf8uz to_hf8uz -> hf8uz
+
+    f4 -> from_f4 to_hf8 -> hf8
+    f4 -> from_f4 to_hf8fn -> hf8fn
+    f4 -> from_f4 to_hf8uz -> hf8uz
+    f4 -> from_f4 to_bf8 -> bf8
+    f4 -> from_f4 to_bf8uz -> bf8uz
+);

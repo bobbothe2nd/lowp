@@ -7,7 +7,7 @@ use core::{
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 
-use crate::bit::float4;
+use crate::{bf8, bf8uz, bit::float4, hf8, hf8fn, hf8uz};
 
 #[cfg(feature = "half")]
 use half::{bf16, f16};
@@ -282,6 +282,201 @@ impl f4 {
         unsafe { float4::to_f64(self.0) }
     }
 
+    /// Converts to [`hf8`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let val = hf8::from_f32(2.0);
+    /// let f4_val = f4::from_f32(2.0);
+    /// assert_eq!(val, f4_val.to_hf8());
+    /// ```
+    pub const fn to_hf8(self) -> hf8 {
+        hf8::from_bits(
+            crate::bit::cvt::float_to_float::<
+                1,
+                2,
+                1,
+                4,
+                0b0111,
+                0b0111,
+                { crate::bit::float8::NO_INF },
+
+                { hf8::FORMAT.frac },
+                { hf8::FORMAT.exp },
+                { hf8::FORMAT.bias },
+                8,
+                { hf8::FORMAT.max },
+                { hf8::FORMAT.nan },
+                {
+                    match hf8::FORMAT.inf {
+                        Some(v) => v,
+                        None => crate::bit::float8::NO_INF,
+                    }
+                },
+            >(
+                self.0
+            )
+        )
+    }
+
+    /// Converts to [`hf8fn`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let val = hf8fn::from_f32(2.0);
+    /// let f4_val = f4::from_f32(2.0);
+    /// assert_eq!(val, f4_val.to_hf8fn());
+    /// ```
+    pub const fn to_hf8fn(self) -> hf8fn {
+        hf8fn::from_bits(
+            crate::bit::cvt::float_to_float::<
+                1,
+                2,
+                1,
+                4,
+                0b0111,
+                0b0111,
+                { crate::bit::float8::NO_INF },
+
+                { hf8fn::FORMAT.frac },
+                { hf8fn::FORMAT.exp },
+                { hf8fn::FORMAT.bias },
+                8,
+                { hf8fn::FORMAT.max },
+                { hf8fn::FORMAT.nan },
+                {
+                    match hf8fn::FORMAT.inf {
+                        Some(v) => v,
+                        None => crate::bit::float8::NO_INF,
+                    }
+                },
+            >(
+                self.0
+            )
+        )
+    }
+
+    /// Converts to [`hf8uz`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let val = hf8uz::from_f32(2.0);
+    /// let f4_val = f4::from_f32(2.0);
+    /// assert_eq!(val, f4_val.to_hf8uz());
+    /// ```
+    pub const fn to_hf8uz(self) -> hf8uz {
+        hf8uz::from_bits(
+            crate::bit::cvt::float_to_float::<
+                1,
+                2,
+                1,
+                4,
+                0b0111,
+                0b0111,
+                { crate::bit::float8::NO_INF },
+
+                { hf8uz::FORMAT.frac },
+                { hf8uz::FORMAT.exp },
+                { hf8uz::FORMAT.bias },
+                8,
+                { hf8uz::FORMAT.max },
+                { hf8uz::FORMAT.nan },
+                {
+                    match hf8uz::FORMAT.inf {
+                        Some(v) => v,
+                        None => crate::bit::float8::NO_INF,
+                    }
+                },
+            >(
+                self.0
+            )
+        )
+    }
+
+    /// Converts to [`bf8`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let val = bf8::from_f32(2.0);
+    /// let f4_val = f4::from_f32(2.0);
+    /// assert_eq!(val, f4_val.to_bf8());
+    /// ```
+    pub const fn to_bf8(self) -> bf8 {
+        bf8::from_bits(
+            crate::bit::cvt::float_to_float::<
+                1,
+                2,
+                1,
+                4,
+                0b0111,
+                0b0111,
+                { crate::bit::float8::NO_INF },
+
+                { bf8::FORMAT.frac },
+                { bf8::FORMAT.exp },
+                { bf8::FORMAT.bias },
+                8,
+                { bf8::FORMAT.max },
+                { bf8::FORMAT.nan },
+                {
+                    match bf8::FORMAT.inf {
+                        Some(v) => v,
+                        None => crate::bit::float8::NO_INF,
+                    }
+                },
+            >(
+                self.0
+            )
+        )
+    }
+
+    /// Converts to [`bf8uz`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// let val = bf8uz::from_f32(2.0);
+    /// let f4_val = f4::from_f32(2.0);
+    /// assert_eq!(val, f4_val.to_bf8uz());
+    /// ```
+    pub const fn to_bf8uz(self) -> bf8uz {
+        bf8uz::from_bits(
+            crate::bit::cvt::float_to_float::<
+                1,
+                2,
+                1,
+                4,
+                0b0111,
+                0b0111,
+                { crate::bit::float8::NO_INF },
+
+                { bf8uz::FORMAT.frac },
+                { bf8uz::FORMAT.exp },
+                { bf8uz::FORMAT.bias },
+                8,
+                { bf8uz::FORMAT.max },
+                { bf8uz::FORMAT.nan },
+                {
+                    match bf8uz::FORMAT.inf {
+                        Some(v) => v,
+                        None => crate::bit::float8::NO_INF,
+                    }
+                },
+            >(
+                self.0
+            )
+        )
+    }
+
     /// Returns `true` if and only if `self` has a positive sign, including +0.0, NaNs with a positive sign bit and +∞.
     #[inline(always)]
     pub const fn is_sign_positive(self) -> bool {
@@ -488,7 +683,7 @@ impl f4 {
 
     /// `log(self, rhs)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -501,7 +696,7 @@ impl f4 {
 
     /// `atan2(self, rhs)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -514,7 +709,7 @@ impl f4 {
 
     /// `self^rhs`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -528,7 +723,7 @@ impl f4 {
 
     /// `hypot(self, rhs)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -544,7 +739,7 @@ impl f4 {
 
     /// `midpoint(self, rhs)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -557,7 +752,7 @@ impl f4 {
 
     /// `cos(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -570,7 +765,7 @@ impl f4 {
 
     /// `sin(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -583,7 +778,7 @@ impl f4 {
 
     /// `acos(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -596,7 +791,7 @@ impl f4 {
 
     /// `asin(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -609,7 +804,7 @@ impl f4 {
 
     /// `acosh(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -622,7 +817,7 @@ impl f4 {
 
     /// `asinh(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -635,7 +830,7 @@ impl f4 {
 
     /// `log(self, E)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -648,7 +843,7 @@ impl f4 {
 
     /// `log(1 + self, E)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -661,7 +856,7 @@ impl f4 {
 
     /// `log(self, 2)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -674,7 +869,7 @@ impl f4 {
 
     /// `log(self, 10)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -687,7 +882,7 @@ impl f4 {
 
     /// `tan(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -700,7 +895,7 @@ impl f4 {
 
     /// `tanh(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -713,7 +908,7 @@ impl f4 {
 
     /// `atan(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -726,7 +921,7 @@ impl f4 {
 
     /// `atanh(self)`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -739,7 +934,7 @@ impl f4 {
 
     /// `E^self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -752,7 +947,7 @@ impl f4 {
 
     /// `2^self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -765,7 +960,7 @@ impl f4 {
 
     /// `E^self-1`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -778,7 +973,7 @@ impl f4 {
 
     /// `√self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -791,7 +986,7 @@ impl f4 {
 
     /// `∛self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -804,7 +999,7 @@ impl f4 {
 
     /// `1/self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -817,7 +1012,7 @@ impl f4 {
 
     /// rounded down
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -830,7 +1025,7 @@ impl f4 {
 
     /// rounded up
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -843,7 +1038,7 @@ impl f4 {
 
     /// integer part of `self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -856,7 +1051,7 @@ impl f4 {
 
     /// `self*180/π`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -870,7 +1065,7 @@ impl f4 {
 
     /// `self*π/180` (always ±0.0 or ±6.0)
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;
@@ -884,7 +1079,7 @@ impl f4 {
 
     /// fractional part of `self`
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// # use lowp::*;

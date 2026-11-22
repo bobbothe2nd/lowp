@@ -33,5 +33,7 @@ pub mod lut;
 pub mod float4;
 pub mod float8;
 
+pub mod cvt;
+
 #[cfg(feature = "half")]
 pub mod half;
