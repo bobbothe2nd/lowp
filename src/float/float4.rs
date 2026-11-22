@@ -16,12 +16,19 @@ use half::{bf16, f16};
 ///
 /// Use this when you need contiguous storage or want to optimize 2 floats into 1 operation.
 #[repr(transparent)]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
 #[cfg_attr(feature = "stable_auto", derive(stable_auto::Auto))]
 pub struct f4x2(u8);
+
+impl PartialEq for f4x2 {
+    fn eq(&self, other: &Self) -> bool {
+        self.lo() == other.lo()
+            && self.hi() == other.hi()
+    }
+}
 
 impl f4x2 {
     /// Reinterprets bits as 2 packed 4-bit floats.

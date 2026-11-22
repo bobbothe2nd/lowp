@@ -1,4 +1,4 @@
-use crate::bit::{NO_INF, round_shift_u64};
+use crate::bit::{round_shift_u64, NO_INF};
 
 #[inline(always)]
 pub const fn float_to_float<
@@ -9,7 +9,6 @@ pub const fn float_to_float<
     const SRC_MAX: u8,
     const SRC_NAN: u8,
     const SRC_INF: u8,
-
     const DST_F: u8,
     const DST_E: u8,
     const DST_B: i8,
@@ -49,13 +48,7 @@ pub const fn float_to_float<
     let src_exp = (abs >> SRC_F) & src_exp_mask;
     let src_frac = abs & src_frac_mask;
 
-    let src_max_exp = if const { SRC_INF != NO_INF } {
-        src_exp_mask
-    } else {
-        src_exp_mask
-    };
-
-    if src_exp == src_max_exp {
+    if src_exp == src_exp_mask {
         if src_frac != 0 {
             return DST_NAN;
         }
@@ -72,10 +65,7 @@ pub const fn float_to_float<
     }
 
     let (mantissa, exponent) = if src_exp == 0 {
-        (
-            src_frac as u64,
-            1 - SRC_B - (SRC_F as i8),
-        )
+        (src_frac as u64, 1 - SRC_B - (SRC_F as i8))
     } else {
         (
             ((1 << SRC_F) | src_frac) as u64,
@@ -129,14 +119,13 @@ pub const fn float_to_float<
     }
 
     if dst_exp > dst_max_exp as i8 {
-        return sign | if const { DST_INF == NO_INF } {
-            DST_MAX
-        } else {
-            DST_INF
-        };
+        return sign
+            | if const { DST_INF == NO_INF } {
+                DST_MAX
+            } else {
+                DST_INF
+            };
     }
 
-    sign
-        | ((dst_exp as u8) << DST_F)
-        | (sig as u8 & ((1 << DST_F) - 1))
+    sign | ((dst_exp as u8) << DST_F) | (sig as u8 & ((1 << DST_F) - 1))
 }

@@ -1,7 +1,9 @@
 use core::num::FpCategory;
 
 use num_traits::{
-    AsPrimitive, Bounded, ConstOne, ConstZero, FloatConst, MulAdd, Num, NumCast, One, ToPrimitive, Zero, float::{FloatCore, TotalOrder},
+    float::{FloatCore, TotalOrder},
+    AsPrimitive, Bounded, ConstOne, ConstZero, FloatConst, MulAdd, Num, NumCast, One, ToPrimitive,
+    Zero,
 };
 
 #[cfg(any(feature = "std", feature = "libm"))]

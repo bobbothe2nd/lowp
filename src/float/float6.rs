@@ -1,10 +1,13 @@
 use core::{
     cmp::Ordering,
-    hint::assert_unchecked,
+    hint::{assert_unchecked, unreachable_unchecked},
     ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use crate::float::FloatFormat;
+use crate::{
+    bit::float6::{ValidIndex, Vec6x4Idx},
+    float::FloatFormat,
+};
 
 const E2M3: FloatFormat = FloatFormat {
     width: 6,
@@ -36,6 +39,27 @@ macro_rules! impl_float6 {
         #[cfg_attr(feature = "stable_auto", derive(stable_auto::Auto))]
         #[repr(transparent)]
         pub struct $vec([u8; 3]);
+
+        impl $vec {
+            #[doc = concat!("Gets the associated 6-bit packed ", stringify!($name), " at index `IDX`.")]
+            #[inline(always)]
+            pub const fn get<const IDX: u8>(&self) -> $name
+            where
+                Vec6x4Idx<IDX>: ValidIndex,
+            {
+                match IDX {
+                    0 => $name(self.0[0] & 0x3f),
+                    1 => $name(
+                        ((self.0[0] >> 6) | (self.0[1] << 2)) & 0x3f
+                    ),
+                    2 => $name(
+                        ((self.0[1] >> 4) | (self.0[2] << 4)) & 0x3f
+                    ),
+                    3 => $name(self.0[2] >> 2),
+                    _ => unsafe { unreachable_unchecked() },
+                }
+            }
+        }
 
         #[doc = concat!("6-bit floating point value with the ", stringify!($format), " format")]
         #[derive(Clone, Copy, Default, Eq)]
@@ -111,5 +135,5 @@ macro_rules! impl_float6 {
     };
 }
 
-impl_float6!(bf6 bf6x4 E3M2);
 impl_float6!(hf6 hf6x4 E2M3);
+impl_float6!(bf6 bf6x4 E3M2);

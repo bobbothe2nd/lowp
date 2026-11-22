@@ -262,7 +262,7 @@ macro_rules! impl_cvt {
             }
         }
         impl $out_ty {
-            /// Converts 
+            /// Converts
             ///
             /// # Examples
             ///

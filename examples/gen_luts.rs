@@ -21,7 +21,11 @@ const VALUES: [F4E2M1; 16] = [
 ];
 
 #[expect(dead_code)]
-fn gen_f6_lut2(name: &str, op_lo: impl Fn(f64, f64) -> f64, op_hi: impl Fn(f64, f64) -> f64) -> String {
+fn gen_f6_lut2(
+    name: &str,
+    op_lo: impl Fn(f64, f64) -> f64,
+    op_hi: impl Fn(f64, f64) -> f64,
+) -> String {
     let mut out = String::new();
 
     writeln!(out, "#[rustfmt::skip]").unwrap();
@@ -132,12 +136,7 @@ fn gen_f4_lut3<
 
                 let result = (hi << 4) | lo;
 
-                writeln!(
-                    out,
-                    "    0x{:X}, // (0x{a:X}, 0x{b:X}, 0x{c:X})",
-                    result,
-                )
-                .unwrap();
+                writeln!(out, "    0x{:X}, // (0x{a:X}, 0x{b:X}, 0x{c:X})", result,).unwrap();
             }
         }
     }
@@ -210,7 +209,7 @@ fn main() -> std::io::Result<()> {
                 9 => a.fract(),
                 _ => 0.0,
             },
-        }
+        },
     ));
 
     fs::write(output, file)

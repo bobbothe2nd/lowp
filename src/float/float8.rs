@@ -246,11 +246,10 @@ macro_rules! impl_float8 {
             /// ```
             #[inline]
             pub const fn is_nan(self) -> bool {
-                $crate::bit::any_float::is_nan::<
+                $crate::bit::float8::is_nan::<
                     { $format.frac },
                     { $format.exp },
                     { $format.nan },
-                    { $format.width },
                     {
                         match $format.inf {
                             Some(v) => v,
@@ -641,7 +640,7 @@ macro_rules! impl_float8 {
             /// `(self * a) + b`
             #[inline]
             pub const fn mul_add(self, a: Self, b: Self) -> Self {
-                Self($crate::bit::float8::fma::<
+                Self($crate::bit::fma::fma::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
