@@ -21,6 +21,10 @@ Provides an extensive set of small float formats:
 - `zerocopy`: Implement traits from `zerocopy` including `AsBytes` and `FromBytes`
 - `stable_auto`: Implement trait from `stable_auto` including `Auto`
 
+## Conversion
+
+All `lowp` float types can be converted to/from any other `lowp` float types and both `core` and `half` float types.
+
 ## Performance
 
 `lowp` delivers significant performance improvements over standard floating-point implementations for low-precision arithmetic.

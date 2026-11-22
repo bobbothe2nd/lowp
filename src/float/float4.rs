@@ -487,186 +487,409 @@ impl f4 {
     }
 
     /// `log(self, rhs)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).log(f4::from_f32(3.0)), f4::from_f32(1.631));
+    /// ```
     #[inline(always)]
     pub const fn log(self, base: Self) -> Self {
         Self(unsafe { float4::log(self.0, base.0) })
     }
 
     /// `atan2(self, rhs)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(4.0).atan2(f4::from_f32(3.0)), f4::from_f32(0.927));
+    /// ```
     #[inline(always)]
     pub const fn atan2(self, rhs: Self) -> Self {
         Self(unsafe { float4::atan2(self.0, rhs.0) })
     }
 
     /// `self^rhs`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(2.0).powf(f4::from_f32(2.0)), f4::from_f32(4.0));
+    /// assert_eq!(f4::from_f32(3.0).powf(f4::from_f32(2.0)), f4::from_f32(6.0));
+    /// ```
     #[inline(always)]
     pub const fn powf(self, rhs: Self) -> Self {
         Self(unsafe { float4::powf(self.0, rhs.0) })
     }
 
     /// `hypot(self, rhs)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(4.0).hypot(f4::from_f32(3.0)), f4::from_f32(5.0));
+    /// assert_eq!(f4::from_f32(4.0).hypot(f4::from_f32(-3.0)), f4::from_f32(5.0));
+    /// assert_eq!(f4::from_f32(-4.0).hypot(f4::from_f32(3.0)), f4::from_f32(5.0));
+    /// assert_eq!(f4::from_f32(-4.0).hypot(f4::from_f32(-3.0)), f4::from_f32(5.0));
+    /// ```
     #[inline(always)]
     pub const fn hypot(self, rhs: Self) -> Self {
         Self(unsafe { float4::hypot(self.0, rhs.0) })
     }
 
     /// `midpoint(self, rhs)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).midpoint(f4::from_f32(-4.0)), f4::from_f32(1.0));
+    /// ```
     #[inline(always)]
     pub const fn midpoint(self, rhs: Self) -> Self {
         Self(unsafe { float4::midpoint(self.0, rhs.0) })
     }
 
     /// `cos(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(4.0).cos(), f4::from_f32(-0.653));
+    /// ```
     #[inline(always)]
     pub const fn cos(self) -> Self {
         Self(unsafe { float4::cos(self.0) })
     }
 
     /// `sin(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(2.0).sin(), f4::from_f32(0.909));
+    /// ```
     #[inline(always)]
     pub const fn sin(self) -> Self {
         Self(unsafe { float4::sin(self.0) })
     }
 
     /// `acos(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(0.5).acos(), f4::from_f32(1.047));
+    /// ```
     #[inline(always)]
     pub const fn acos(self) -> Self {
         Self(unsafe { float4::acos(self.0) })
     }
 
     /// `asin(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(-0.5).asin(), f4::from_f32(-0.523));
+    /// ```
     #[inline(always)]
     pub const fn asin(self) -> Self {
         Self(unsafe { float4::asin(self.0) })
     }
 
     /// `acosh(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(2.0).acosh(), f4::from_f32(1.317));
+    /// ```
     #[inline(always)]
     pub const fn acosh(self) -> Self {
         Self(unsafe { float4::acosh(self.0) })
     }
 
     /// `asinh(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(0.5).asinh(), f4::from_f32(0.481));
+    /// ```
     #[inline(always)]
     pub const fn asinh(self) -> Self {
         Self(unsafe { float4::asinh(self.0) })
     }
 
     /// `log(self, E)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).ln(), f4::from_f32(1.791));
+    /// ```
     #[inline(always)]
     pub const fn ln(self) -> Self {
         Self(unsafe { float4::ln(self.0) })
     }
 
-    /// `ln_1p(1 + self, E)`
+    /// `log(1 + self, E)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).ln_1p(), f4::from_f32(1.945));
+    /// ```
     #[inline(always)]
     pub const fn ln_1p(self) -> Self {
         Self(unsafe { float4::ln_1p(self.0) })
     }
 
     /// `log(self, 2)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).log2(), f4::from_f32(2.584));
+    /// ```
     #[inline(always)]
     pub const fn log2(self) -> Self {
         Self(unsafe { float4::log2(self.0) })
     }
 
     /// `log(self, 10)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).log10(), f4::from_f32(0.778));
+    /// ```
     #[inline(always)]
     pub const fn log10(self) -> Self {
         Self(unsafe { float4::log10(self.0) })
     }
 
-    /// `tan(self, 2)`
+    /// `tan(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).tan(), f4::from_f32(-0.291));
+    /// ```
     #[inline(always)]
     pub const fn tan(self) -> Self {
         Self(unsafe { float4::tan(self.0) })
     }
 
-    /// `tanh(self, 2)`
+    /// `tanh(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).tanh(), f4::from_f32(1.0));
+    /// ```
     #[inline(always)]
     pub const fn tanh(self) -> Self {
         Self(unsafe { float4::tanh(self.0) })
     }
 
-    /// `atan(self, 2)`
+    /// `atan(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).atan(), f4::from_f32(1.405));
+    /// ```
     #[inline(always)]
     pub const fn atan(self) -> Self {
         Self(unsafe { float4::atan(self.0) })
     }
 
-    /// `atanh(self, 2)`
+    /// `atanh(self)`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(0.5).atanh(), f4::from_f32(0.549));
+    /// ```
     #[inline(always)]
     pub const fn atanh(self) -> Self {
         Self(unsafe { float4::atanh(self.0) })
     }
 
     /// `E^self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(1.5).exp(), f4::from_f32(4.481));
+    /// ```
     #[inline(always)]
     pub const fn exp(self) -> Self {
         Self(unsafe { float4::exp(self.0) })
     }
 
     /// `2^self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(2.0).exp2(), f4::from_f32(4.0));
+    /// ```
     #[inline(always)]
     pub const fn exp2(self) -> Self {
         Self(unsafe { float4::exp2(self.0) })
     }
 
     /// `E^self-1`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(1.5).exp_m1(), f4::from_f32(3.481));
+    /// ```
     #[inline(always)]
     pub const fn exp_m1(self) -> Self {
         Self(unsafe { float4::exp_m1(self.0) })
     }
 
     /// `√self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(4.0).sqrt(), f4::from_f32(2.0));
+    /// ```
     #[inline(always)]
     pub const fn sqrt(self) -> Self {
         Self(unsafe { float4::sqrt(self.0) })
     }
 
     /// `∛self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(6.0).cbrt(), f4::from_f32(1.817));
+    /// ```
     #[inline(always)]
     pub const fn cbrt(self) -> Self {
         Self(unsafe { float4::cbrt(self.0) })
     }
 
     /// `1/self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(2.0).recip(), f4::from_f32(0.5));
+    /// ```
     #[inline(always)]
     pub const fn recip(self) -> Self {
         Self(unsafe { float4::recip(self.0) })
     }
 
     /// rounded down
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(2.5).floor(), f4::from_f32(2.0));
+    /// ```
     #[inline(always)]
     pub const fn floor(self) -> Self {
         Self(unsafe { float4::floor(self.0) })
     }
 
     /// rounded up
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(1.5).ceil(), f4::from_f32(2.0));
+    /// ```
     #[inline(always)]
     pub const fn ceil(self) -> Self {
         Self(unsafe { float4::ceil(self.0) })
     }
 
     /// integer part of `self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(1.5).floor(), f4::from_f32(1.0));
+    /// ```
     #[inline(always)]
     pub const fn trunc(self) -> Self {
         Self(unsafe { float4::trunc(self.0) })
     }
 
     /// `self*180/π`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(0.0).to_degrees(), f4::from_f32(0.0));
+    /// assert_eq!(f4::from_f32(0.5).to_degrees(), f4::from_f32(28.647));
+    /// ```
     #[inline(always)]
     pub const fn to_degrees(self) -> Self {
         Self(unsafe { float4::to_degrees(self.0) })
     }
 
-    /// `self*π/180`
+    /// `self*π/180` (always ±0.0 or ±6.0)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(0.0).to_radians(), f4::from_f32(0.0));
+    /// assert_eq!(f4::from_f32(6.0).to_radians(), f4::from_f32(0.104));
+    /// ```
     #[inline(always)]
     pub const fn to_radians(self) -> Self {
         Self(unsafe { float4::to_radians(self.0) })
     }
 
     /// fractional part of `self`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use lowp::*;
+    /// assert_eq!(f4::from_f32(1.5).fract(), f4::from_f32(0.5));
+    /// ```
     #[inline(always)]
     pub const fn fract(self) -> Self {
         Self(unsafe { float4::fract(self.0) })
