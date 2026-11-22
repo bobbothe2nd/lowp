@@ -145,10 +145,11 @@ macro_rules! impl_float8 {
             /// - All other values are truncated and rounded to the nearest representable  8-bit value.
             #[inline]
             pub const fn from_f32(x: f32) -> Self {
-                Self($crate::bit::float8::from_f32::<
+                Self($crate::bit::cvt::from_f32::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -169,10 +170,11 @@ macro_rules! impl_float8 {
             /// - Otherwise, the values are mapped to the appropriate 32-bit value.
             #[inline]
             pub const fn to_f32(self) -> f32 {
-                $crate::bit::float8::to_f32::<
+                $crate::bit::cvt::to_f32::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.nan },
                     {
                         match $format.inf {
@@ -194,10 +196,11 @@ macro_rules! impl_float8 {
             /// - All other values are truncated and rounded to the nearest representable  8-bit value.
             #[inline]
             pub const fn from_f64(x: f64) -> Self {
-                Self($crate::bit::float8::from_f64::<
+                Self($crate::bit::cvt::from_f64::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -218,10 +221,11 @@ macro_rules! impl_float8 {
             /// - Otherwise, the values are mapped to the appropriate 64-bit value.
             #[inline]
             pub const fn to_f64(self) -> f64 {
-                $crate::bit::float8::to_f64::<
+                $crate::bit::cvt::to_f64::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.nan },
                     {
                         match $format.inf {

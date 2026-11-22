@@ -1,4 +1,7 @@
-use crate::bit::{NO_INF, ops::{is_nan, sign_mask}, round_shift_u64};
+use crate::bit::{
+    ops::{is_nan, sign_mask},
+    NO_INF,
+};
 
 #[inline(always)]
 pub const fn rem<
@@ -17,10 +20,12 @@ pub const fn rem<
         return NAN;
     }
 
-    let a_abs = a & !sign_mask::<W>();
-    let b_abs = b & !sign_mask::<W>();
+    let sign_mask = const { sign_mask::<W>() };
 
-    let a_sign = a & sign_mask::<W>();
+    let a_abs = a & !sign_mask;
+    let b_abs = b & !sign_mask;
+
+    let a_sign = a & sign_mask;
 
     let a_zero = a_abs == 0;
     let b_zero = b_abs == 0;
@@ -31,7 +36,7 @@ pub const fn rem<
 
         if a_inf || b_inf {
             if a_inf || b_zero {
-                return const { sign_mask::<W>() | NAN };
+                return sign_mask | NAN;
             }
 
             return a;
@@ -39,7 +44,7 @@ pub const fn rem<
     }
 
     if b_zero {
-        return const { sign_mask::<W>() | NAN };
+        return sign_mask | NAN;
     }
 
     if a_zero {
@@ -77,19 +82,14 @@ pub const fn rem<
 
     let (remainder, result_power) = if power_diff >= 0 {
         let mut r = 0u64;
-        let mut q_odd;
 
         let hi = 63 - a_sig.leading_zeros();
         let mut i = hi as i32;
 
         while i >= 0 {
-            let bit = (a_sig >> i as u32) & 1;
+            r = (r << 1) | ((a_sig >> i as u32) & 1);
 
-            r = (r << 1) | bit;
-
-            q_odd = r >= b_sig;
-
-            if q_odd {
+            if r >= b_sig {
                 r -= b_sig;
             }
 
@@ -101,9 +101,7 @@ pub const fn rem<
         while i < power_diff {
             r <<= 1;
 
-            q_odd = r >= b_sig;
-
-            if q_odd {
+            if r >= b_sig {
                 r -= b_sig;
             }
 
@@ -127,44 +125,33 @@ pub const fn rem<
         return a_sign;
     }
 
-    let min_normal_exp = const { 1 - B as i32 };
-    let min_subnormal_exp = min_normal_exp - F as i32;
-
     let result_hi = 63 - remainder.leading_zeros();
     let unbiased_exp = result_hi as i32 + result_power;
 
+    let min_normal_exp = const { 1 - B as i32 };
+    let min_subnormal_exp = min_normal_exp - F as i32;
+
+    // Remainder is exact, so normalization must not round.
     if unbiased_exp < min_normal_exp {
         let shift = min_subnormal_exp - result_power;
 
         let sig = if shift > 0 {
-            round_shift_u64(remainder, shift as u32)
+            remainder >> shift as u32
         } else {
             remainder << (-shift) as u32
         };
 
-        if sig == 0 {
-            return a_sign;
-        }
-
-        if sig >= const { 1u64 << F } {
-            return a_sign | const { 1u8 << F };
-        }
-
         return a_sign | sig as u8;
     }
 
-    let mut target_exp = unbiased_exp;
+    let target_exp = unbiased_exp;
+    let shift = result_hi as i32 - F as i32;
 
-    let mut sig = if result_hi > F as u32 {
-        round_shift_u64(remainder, result_hi - F as u32)
+    let sig = if shift > 0 {
+        remainder >> shift as u32
     } else {
-        remainder << (F as u32 - result_hi)
+        remainder << (-shift) as u32
     };
-
-    if sig >= (1u64 << (F + 1)) {
-        sig >>= 1;
-        target_exp += 1;
-    }
 
     let encoded_exp = target_exp + B as i32;
 

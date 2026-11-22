@@ -1,4 +1,7 @@
-use crate::bit::{NO_INF, ops::{is_nan, sign_mask}, round_shift_u64};
+use crate::bit::{
+    ops::{is_nan, sign_mask},
+    round_shift_u64, NO_INF,
+};
 
 #[inline(always)]
 pub const fn mul<
@@ -17,12 +20,12 @@ pub const fn mul<
         return NAN;
     }
 
-    let a_abs = a & !sign_mask::<W>();
-    let b_abs = b & !sign_mask::<W>();
+    let sign_mask = const { sign_mask::<W>() };
 
-    let sa = a & sign_mask::<W>();
-    let sb = b & sign_mask::<W>();
-    let sign = sa ^ sb;
+    let a_abs = a & !sign_mask;
+    let b_abs = b & !sign_mask;
+
+    let sign = (a ^ b) & sign_mask;
 
     let a_zero = a_abs == 0;
     let b_zero = b_abs == 0;
@@ -33,7 +36,7 @@ pub const fn mul<
 
         if a_inf || b_inf {
             if (a_inf && b_zero) || (b_inf && a_zero) {
-                return const { sign_mask::<W>() | NAN };
+                return sign | NAN;
             }
 
             return sign | INF;
@@ -44,8 +47,8 @@ pub const fn mul<
         return sign;
     }
 
-    let frac_mask = const { 1u8 << F } - 1;
-    let exp_mask = const { 1u8 << E } - 1;
+    let frac_mask = const { (1u8 << F) - 1 };
+    let exp_mask = const { (1u8 << E) - 1 };
 
     let a_exp = (a_abs >> F) & exp_mask;
     let b_exp = (b_abs >> F) & exp_mask;
@@ -57,7 +60,7 @@ pub const fn mul<
         (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
-            (const { 1u64 << F } | a_frac as u64),
+            (const { 1u64 << F }) | a_frac as u64,
             a_exp as i32 - const { B as i32 + F as i32 },
         )
     };
@@ -66,7 +69,7 @@ pub const fn mul<
         (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
-            (const { 1u64 << F } | b_frac as u64),
+            (const { 1u64 << F }) | b_frac as u64,
             b_exp as i32 - const { B as i32 + F as i32 },
         )
     };
@@ -74,13 +77,12 @@ pub const fn mul<
     let product = a_sig * b_sig;
     let power = a_power + b_power;
 
+    let product_hi = 63 - product.leading_zeros();
+
     let min_normal_exp = const { 1 - B as i32 };
     let min_subnormal_exp = min_normal_exp - F as i32;
 
-    let product_hi = 63 - product.leading_zeros();
-    let unbiased_exp = product_hi as i32 + power;
-
-    if unbiased_exp < min_normal_exp {
+    if product_hi as i32 + power < min_normal_exp {
         let shift = min_subnormal_exp - power;
 
         let sig = if shift > 0 {
@@ -102,7 +104,6 @@ pub const fn mul<
         (1u32 << E) - 1
     };
 
-    let product_hi = 63 - product.leading_zeros();
     let mut target_exp = product_hi as i32 + power;
 
     let mut sig = if product_hi > F as u32 {

@@ -1,4 +1,7 @@
-use crate::bit::{NO_INF, ops::{is_nan, sign_mask}};
+use crate::bit::{
+    ops::{is_nan, sign_mask},
+    NO_INF,
+};
 
 #[inline(always)]
 pub const fn addsub<
@@ -18,22 +21,25 @@ pub const fn addsub<
         return NAN;
     }
 
-    let a_abs = a & !sign_mask::<W>();
-    let b_abs = b & !sign_mask::<W>();
+    let sign_mask = const { sign_mask::<W>() };
+    let sign_toggle = if SUB { sign_mask } else { 0 };
+
+    let a_abs = a & !sign_mask;
+    let b_abs = b & !sign_mask;
 
     if const { INF != NO_INF } {
         let a_inf = a_abs == INF;
         let b_inf = b_abs == INF;
 
         if a_inf || b_inf {
-            let sa = a >> 7;
-            let sb = (b >> 7) ^ (SUB as u8);
+            let sa = a & sign_mask;
+            let sb = (b & sign_mask) ^ sign_toggle;
 
             if a_inf && b_inf && sa != sb {
                 return NAN;
             }
 
-            return if a_inf { a } else { b ^ ((SUB as u8) << 7) };
+            return if a_inf { a } else { b ^ sign_toggle };
         }
     }
 
@@ -42,24 +48,24 @@ pub const fn addsub<
             return if SUB { a & !b } else { a & b };
         }
 
-        return if SUB { b ^ sign_mask::<W>() } else { b };
+        return b ^ sign_toggle;
     }
 
     if b_abs == 0 {
         return a;
     }
 
-    let sa = a >> 7;
-    let sb = (b >> 7) ^ (SUB as u8);
+    let sa = a & sign_mask != 0;
+    let sb = (b & sign_mask != 0) ^ SUB;
 
     let mut ma = decode_finite::<F, E>(a_abs);
     let mut mb = decode_finite::<F, E>(b_abs);
 
-    if sa != 0 {
+    if sa {
         ma = -ma;
     }
 
-    if sb != 0 {
+    if sb {
         mb = -mb;
     }
 
@@ -69,7 +75,7 @@ pub const fn addsub<
         return 0;
     }
 
-    let sign = if sum < 0 { sign_mask::<W>() } else { 0 };
+    let sign = if sum < 0 { sign_mask } else { 0 };
     let q = sum.unsigned_abs();
 
     if q < const { 1 << F } {

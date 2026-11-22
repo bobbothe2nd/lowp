@@ -1,4 +1,7 @@
-use crate::bit::{NO_INF, ops::{is_nan, sign_mask}};
+use crate::bit::{
+    ops::{is_nan, sign_mask},
+    NO_INF,
+};
 
 #[inline(always)]
 pub const fn div<
@@ -17,10 +20,12 @@ pub const fn div<
         return NAN;
     }
 
-    let a_abs = a & !sign_mask::<W>();
-    let b_abs = b & !sign_mask::<W>();
+    let sign_mask = const { sign_mask::<W>() };
 
-    let sign = (a ^ b) & sign_mask::<W>();
+    let a_abs = a & !sign_mask;
+    let b_abs = b & !sign_mask;
+
+    let sign = (a ^ b) & sign_mask;
 
     let a_zero = a_abs == 0;
     let b_zero = b_abs == 0;
@@ -31,7 +36,7 @@ pub const fn div<
 
         if a_inf || b_inf {
             if a_inf && b_inf {
-                return const { sign_mask::<W>() | NAN };
+                return sign_mask | NAN;
             }
 
             if a_inf {
@@ -44,7 +49,7 @@ pub const fn div<
 
     if b_zero {
         if a_zero {
-            return const { sign_mask::<W>() | NAN };
+            return sign_mask | NAN;
         }
 
         return sign | MAX;
@@ -54,8 +59,8 @@ pub const fn div<
         return sign;
     }
 
-    let frac_mask = const { 1u8 << F } - 1;
-    let exp_mask = const { 1u8 << E } - 1;
+    let frac_mask = const { (1u8 << F) - 1 };
+    let exp_mask = const { (1u8 << E) - 1 };
 
     let a_exp = (a_abs >> F) & exp_mask;
     let b_exp = (b_abs >> F) & exp_mask;
@@ -67,7 +72,7 @@ pub const fn div<
         (a_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
-            const { 1u64 << F } | a_frac as u64,
+            (const { 1u64 << F }) | a_frac as u64,
             a_exp as i32 - const { B as i32 + F as i32 },
         )
     };
@@ -76,7 +81,7 @@ pub const fn div<
         (b_frac as u64, const { 1i32 - B as i32 - F as i32 })
     } else {
         (
-            const { 1u64 << F } | b_frac as u64,
+            (const { 1u64 << F }) | b_frac as u64,
             b_exp as i32 - const { B as i32 + F as i32 },
         )
     };
@@ -88,7 +93,7 @@ pub const fn div<
 
     let mut ratio_exp = a_hi as i32 - b_hi as i32;
 
-    if a_sig << b_hi < b_sig << a_hi {
+    if (a_sig << b_hi) < (b_sig << a_hi) {
         ratio_exp -= 1;
     }
 
@@ -135,6 +140,7 @@ pub const fn div<
     } else {
         (1u32 << E) - 1
     };
+
     let encoded_exp = target_exp + B as i32;
 
     if encoded_exp > max_exp as i32 {

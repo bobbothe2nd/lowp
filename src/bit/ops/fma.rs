@@ -1,5 +1,6 @@
 use crate::bit::{
-    NO_INF, ops::{is_nan, sign_mask}, round_shift_u64,
+    ops::{is_nan, sign_mask},
+    round_shift_u64, NO_INF,
 };
 
 #[inline(always)]
@@ -16,17 +17,22 @@ pub const fn fma<
     b: u8,
     c: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) || is_nan::<F, E, W, MAX, NAN, INF>(c) {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a)
+        || is_nan::<F, E, W, MAX, NAN, INF>(b)
+        || is_nan::<F, E, W, MAX, NAN, INF>(c)
+    {
         return NAN;
     }
 
-    let a_abs = a & !sign_mask::<W>();
-    let b_abs = b & !sign_mask::<W>();
-    let c_abs = c & !sign_mask::<W>();
+    let sign_mask = const { sign_mask::<W>() };
 
-    let a_sign = a & sign_mask::<W>();
-    let b_sign = b & sign_mask::<W>();
-    let c_sign = c & sign_mask::<W>();
+    let a_abs = a & !sign_mask;
+    let b_abs = b & !sign_mask;
+    let c_abs = c & !sign_mask;
+
+    let a_sign = a & sign_mask;
+    let b_sign = b & sign_mask;
+    let c_sign = c & sign_mask;
 
     let product_sign = a_sign ^ b_sign;
 

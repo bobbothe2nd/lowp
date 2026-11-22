@@ -1,11 +1,20 @@
 pub mod add;
+pub mod div;
 pub mod fma;
 pub mod mul;
-pub mod div;
 pub mod rem;
 
 #[inline(always)]
-pub const fn is_nan<const F: u8, const E: u8, const W: u8, const MAX: u8, const NAN: u8, const INF: u8>(x: u8) -> bool {
+pub const fn is_nan<
+    const F: u8,
+    const E: u8,
+    const W: u8,
+    const MAX: u8,
+    const NAN: u8,
+    const INF: u8,
+>(
+    x: u8,
+) -> bool {
     if const { MAX == NAN && W != 8 } {
         false
     } else {
