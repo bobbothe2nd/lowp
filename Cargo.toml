@@ -9,17 +9,25 @@ documentation = "https://docs.rs/lowp"
 repository = "https://github.com/bobbothe2nd/lowp"
 
 [features]
+# use standard library
 alloc = []
 std = ["num-traits?/std"]
 
+# no-std impl for num_traits::Float
 libm = ["num-traits?/libm"]
 
+# ecosystem support
 stable_auto = ["dep:stable_auto"]
 serde = ["dep:serde"]
 half = ["dep:half"]
 bytemuck = ["dep:bytemuck"]
 zerocopy = ["dep:zerocopy"]
 num-traits = ["dep:num-traits"]
+
+# what LUTs to use
+lut-f4 = []
+lut-hf6 = []
+lut-bf6 = []
 
 [dependencies]
 half = { version = "2.4.1", default-features = false, optional = true }

@@ -5,6 +5,7 @@
 //!
 //! F4 Indexing: `(c << 8) | (a << 4) | b`.
 
+#[cfg(feature = "lut-f4")]
 #[rustfmt::skip]
 pub static LUT_F4: [u8; 4096] = [
     0x0, // (0x0, 0x0, 0x0)

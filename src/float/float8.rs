@@ -548,10 +548,11 @@ macro_rules! impl_float8 {
             /// `self + rhs`
             #[inline]
             pub const fn add_const(self, rhs: Self) -> Self {
-                Self($crate::bit::float8::addsub::<
+                Self($crate::bit::ops::add::addsub::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -567,10 +568,11 @@ macro_rules! impl_float8 {
             /// `self - rhs`
             #[inline]
             pub const fn sub_const(self, rhs: Self) -> Self {
-                Self($crate::bit::float8::addsub::<
+                Self($crate::bit::ops::add::addsub::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -586,10 +588,11 @@ macro_rules! impl_float8 {
             /// `self * rhs`
             #[inline]
             pub const fn mul_const(self, rhs: Self) -> Self {
-                Self($crate::bit::float8::mul::<
+                Self($crate::bit::ops::mul::mul::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -604,10 +607,11 @@ macro_rules! impl_float8 {
             /// `self / rhs`
             #[inline]
             pub const fn div_const(self, rhs: Self) -> Self {
-                Self($crate::bit::float8::div::<
+                Self($crate::bit::ops::div::div::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -622,10 +626,11 @@ macro_rules! impl_float8 {
             /// `self % rhs`
             #[inline]
             pub const fn rem_const(self, rhs: Self) -> Self {
-                Self($crate::bit::float8::rem::<
+                Self($crate::bit::ops::rem::rem::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {
@@ -640,10 +645,11 @@ macro_rules! impl_float8 {
             /// `(self * a) + b`
             #[inline]
             pub const fn mul_add(self, a: Self, b: Self) -> Self {
-                Self($crate::bit::fma::fma::<
+                Self($crate::bit::ops::fma::fma::<
                     { $format.frac },
                     { $format.exp },
                     { $format.bias },
+                    { $format.width },
                     { $format.max },
                     { $format.nan },
                     {

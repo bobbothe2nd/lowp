@@ -41,7 +41,28 @@ macro_rules! impl_float6 {
         pub struct $vec([u8; 3]);
 
         impl $vec {
-            #[doc = concat!("Gets the associated 6-bit packed ", stringify!($name), " at index `IDX`.")]
+            #[doc = concat!("Packs 4 [`", stringify!($name), "`] values into a [`", stringify!($vec), "`].")]
+            #[inline(always)]
+            pub const fn new(a: $name, b: $name, c: $name, d: $name) -> Self {
+                let bits = (a.to_bits() as u32)
+                    | ((b.to_bits() as u32) << 6)
+                    | ((c.to_bits() as u32) << 12)
+                    | ((d.to_bits() as u32) << 18);
+
+                Self([
+                    bits as u8,
+                    (bits >> 8) as u8,
+                    (bits >> 16) as u8,
+                ])
+            }
+
+            /// Constructs a packed vector from an array of 6-bit floats.
+            #[inline(always)]
+            pub const fn from_array(values: [$name; 4]) -> Self {
+                Self::new(values[0], values[1], values[2], values[3])
+            }
+
+            #[doc = concat!("Gets the associated 6-bit packed [`", stringify!($name), "`] at index `IDX`.")]
             #[inline(always)]
             pub const fn get<const IDX: u8>(&self) -> $name
             where
@@ -58,6 +79,39 @@ macro_rules! impl_float6 {
                     3 => $name(self.0[2] >> 2),
                     _ => unsafe { unreachable_unchecked() },
                 }
+            }
+
+            #[doc = concat!("Packs individual [`", stringify!($name), "`] values into [`", stringify!($vec), "`] groups.")]
+            ///
+            /// If `values.len()` is not divisible by four, the final group is padded with
+            #[doc = concat!("[`", stringify!($name), "::ZERO`].")]
+            #[inline]
+            #[cfg(feature = "alloc")]
+            pub fn pack(values: &[$name]) -> Box<[Self]> {
+                values
+                    .chunks(4)
+                    .map(|chunk| {
+                        let a = chunk[0];
+                        let b = if chunk.len() > 1 { chunk[1] } else { $name::ZERO };
+                        let c = if chunk.len() > 2 { chunk[2] } else { $name::ZERO };
+                        let d = if chunk.len() > 3 { chunk[3] } else { $name::ZERO };
+                        bf6x4::new(a, b, c, d)
+                    })
+                    .collect()
+            }
+
+            #[doc = concat!("Unpacks [`", stringify!($vec), "`] groups into individual [`", stringify!($name), "`] values.")]
+            #[inline]
+            #[cfg(feature = "alloc")]
+            pub fn unpack(packed: &[Self]) -> Box<[$name]> {
+                let mut result = Box::new_uninit_slice(packed.len() * 4);
+                for (pos, &group) in packed.iter().enumerate() {
+                    result[pos * 4].write(group.get::<0>());
+                    result[pos * 4 + 1].write(group.get::<1>());
+                    result[pos * 4 + 2].write(group.get::<2>());
+                    result[pos * 4 + 3].write(group.get::<3>());
+                }
+                unsafe { result.assume_init() }
             }
         }
 

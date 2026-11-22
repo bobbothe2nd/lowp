@@ -174,14 +174,20 @@ macro_rules! lut {
             ::core::hint::assert_unchecked($b & 0xf0 == 0);
             ::core::hint::assert_unchecked($c & 0xf0 == 0);
         }
+        #[cfg(feature = "lut-f4")]
+        {
+            let idx = (($c as usize) << 8) | (($a as usize) << 4) | ($b as usize);
 
-        let idx = (($c as usize) << 8) | (($a as usize) << 4) | ($b as usize);
+            unsafe {
+                ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
+            }
 
-        unsafe {
-            ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
+            super::lut::$lut[idx] & 0x0f
         }
-
-        super::lut::$lut[idx] & 0x0f
+        #[cfg(not(feature = "lut-f4"))]
+        {
+            todo!()
+        }
     }};
 
     (
@@ -194,14 +200,20 @@ macro_rules! lut {
             ::core::hint::assert_unchecked($a & 0xf0 == 0);
             ::core::hint::assert_unchecked($b & 0xf0 == 0);
         }
+        #[cfg(feature = "lut-f4")]
+        {
+            let idx = ($c << 8) | (($a as usize) << 4) | ($b as usize);
 
-        let idx = ($c << 8) | (($a as usize) << 4) | ($b as usize);
+            unsafe {
+                ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
+            }
 
-        unsafe {
-            ::core::hint::assert_unchecked(idx < super::lut::$lut.len());
+            super::lut::$lut[idx] >> 4
         }
-
-        super::lut::$lut[idx] >> 4
+        #[cfg(not(feature = "lut-f4"))]
+        {
+            todo!()
+        }
     }};
 }
 

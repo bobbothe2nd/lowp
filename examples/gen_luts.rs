@@ -104,6 +104,7 @@ fn gen_f4_lut3<
 ) -> String {
     let mut out = String::new();
 
+    writeln!(out, "#[cfg(feature = \"lut-f4\")]").unwrap();
     writeln!(out, "#[rustfmt::skip]").unwrap();
     writeln!(out, "pub static {name}: [u8; 4096] = [").unwrap();
 

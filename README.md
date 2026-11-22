@@ -20,6 +20,9 @@ Provides an extensive set of small float formats:
 - `bytemuck`: Implement traits from `bytemuck` including `Zeroable` and `Pod`
 - `zerocopy`: Implement traits from `zerocopy` including `AsBytes` and `FromBytes`
 - `stable_auto`: Implement trait from `stable_auto` including `Auto`
+- `lut-f4`: Use highly optimized LUT for `f4` operations at the cost of 4 KiB of static storage
+- `lut-hf6`: Use highly optimized LUT for `hf6` operations at the cost of ? of static storage
+- `lut-bf6`: Use highly optimized LUT for `bf6` operations at the cost of ? of static storage
 
 ## Conversion
 
@@ -36,6 +39,7 @@ All benchmarks were run with the following configuration:
 - CPU: Intel Core i7-1250U
 - Benchmark size: 4096 operations
 - Compiler settings: Default Rust compiler settings (no `target-cpu=native` or additional CPU-specific optimizations)
+- `lut-f4` and `lut-f6` enabled
 
 ### Benchmark results
 

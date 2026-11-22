@@ -25,8 +25,7 @@ pub struct f4x2(u8);
 
 impl PartialEq for f4x2 {
     fn eq(&self, other: &Self) -> bool {
-        self.lo() == other.lo()
-            && self.hi() == other.hi()
+        self.lo() == other.lo() && self.hi() == other.hi()
     }
 }
 
@@ -123,13 +122,13 @@ impl f4x2 {
     /// ```
     #[inline]
     #[cfg(feature = "alloc")]
-    pub fn pack(values: &[f4]) -> Box<[f4x2]> {
+    pub fn pack(values: &[f4]) -> Box<[Self]> {
         values
             .chunks(2)
             .map(|chunk| {
                 let lo = chunk[0];
                 let hi = if chunk.len() == 2 { chunk[1] } else { f4::ZERO };
-                f4x2::new(lo, hi)
+                Self::new(lo, hi)
             })
             .collect()
     }
@@ -155,7 +154,7 @@ impl f4x2 {
     /// ```
     #[inline]
     #[cfg(feature = "alloc")]
-    pub fn unpack(packed: &[f4x2]) -> Box<[f4]> {
+    pub fn unpack(packed: &[Self]) -> Box<[f4]> {
         let mut result = Box::new_uninit_slice(packed.len() * 2);
         for (pos, &pair) in packed.iter().enumerate() {
             result[pos].write(pair.lo());
