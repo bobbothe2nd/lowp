@@ -7,7 +7,7 @@ use core::{
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 
-use crate::{bf8, bf8uz, bit::float4, hf8, hf8fn, hf8uz};
+use crate::{bit::float4, float::FloatFormat};
 
 #[cfg(feature = "half")]
 use half::{bf16, f16};
@@ -16,7 +16,7 @@ use half::{bf16, f16};
 ///
 /// Use this when you need contiguous storage or want to optimize 2 floats into 1 operation.
 #[repr(transparent)]
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
@@ -165,7 +165,7 @@ impl f4x2 {
 /// - Subnormal numbers: ±0.5
 /// - Zero: ±0.0
 #[repr(transparent)]
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable))]
 #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes))]
@@ -173,6 +173,16 @@ impl f4x2 {
 pub struct f4(u8);
 
 impl f4 {
+    pub(super) const FORMAT: FloatFormat = FloatFormat {
+        width: 4,
+        exp: 2,
+        frac: 1,
+        bias: 1,
+        max: 0x7,
+        nan: 0x7,
+        inf: None,
+    };
+
     /// Maximum possible value
     pub const MAX: Self = Self(0b0111);
     /// Minimum possible value
@@ -280,201 +290,6 @@ impl f4 {
     #[inline]
     pub const fn to_f64(self) -> f64 {
         unsafe { float4::to_f64(self.0) }
-    }
-
-    /// Converts to [`hf8`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use lowp::*;
-    /// let val = hf8::from_f32(2.0);
-    /// let f4_val = f4::from_f32(2.0);
-    /// assert_eq!(val, f4_val.to_hf8());
-    /// ```
-    pub const fn to_hf8(self) -> hf8 {
-        hf8::from_bits(
-            crate::bit::cvt::float_to_float::<
-                1,
-                2,
-                1,
-                4,
-                0b0111,
-                0b0111,
-                { crate::bit::float8::NO_INF },
-
-                { hf8::FORMAT.frac },
-                { hf8::FORMAT.exp },
-                { hf8::FORMAT.bias },
-                8,
-                { hf8::FORMAT.max },
-                { hf8::FORMAT.nan },
-                {
-                    match hf8::FORMAT.inf {
-                        Some(v) => v,
-                        None => crate::bit::float8::NO_INF,
-                    }
-                },
-            >(
-                self.0
-            )
-        )
-    }
-
-    /// Converts to [`hf8fn`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use lowp::*;
-    /// let val = hf8fn::from_f32(2.0);
-    /// let f4_val = f4::from_f32(2.0);
-    /// assert_eq!(val, f4_val.to_hf8fn());
-    /// ```
-    pub const fn to_hf8fn(self) -> hf8fn {
-        hf8fn::from_bits(
-            crate::bit::cvt::float_to_float::<
-                1,
-                2,
-                1,
-                4,
-                0b0111,
-                0b0111,
-                { crate::bit::float8::NO_INF },
-
-                { hf8fn::FORMAT.frac },
-                { hf8fn::FORMAT.exp },
-                { hf8fn::FORMAT.bias },
-                8,
-                { hf8fn::FORMAT.max },
-                { hf8fn::FORMAT.nan },
-                {
-                    match hf8fn::FORMAT.inf {
-                        Some(v) => v,
-                        None => crate::bit::float8::NO_INF,
-                    }
-                },
-            >(
-                self.0
-            )
-        )
-    }
-
-    /// Converts to [`hf8uz`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use lowp::*;
-    /// let val = hf8uz::from_f32(2.0);
-    /// let f4_val = f4::from_f32(2.0);
-    /// assert_eq!(val, f4_val.to_hf8uz());
-    /// ```
-    pub const fn to_hf8uz(self) -> hf8uz {
-        hf8uz::from_bits(
-            crate::bit::cvt::float_to_float::<
-                1,
-                2,
-                1,
-                4,
-                0b0111,
-                0b0111,
-                { crate::bit::float8::NO_INF },
-
-                { hf8uz::FORMAT.frac },
-                { hf8uz::FORMAT.exp },
-                { hf8uz::FORMAT.bias },
-                8,
-                { hf8uz::FORMAT.max },
-                { hf8uz::FORMAT.nan },
-                {
-                    match hf8uz::FORMAT.inf {
-                        Some(v) => v,
-                        None => crate::bit::float8::NO_INF,
-                    }
-                },
-            >(
-                self.0
-            )
-        )
-    }
-
-    /// Converts to [`bf8`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use lowp::*;
-    /// let val = bf8::from_f32(2.0);
-    /// let f4_val = f4::from_f32(2.0);
-    /// assert_eq!(val, f4_val.to_bf8());
-    /// ```
-    pub const fn to_bf8(self) -> bf8 {
-        bf8::from_bits(
-            crate::bit::cvt::float_to_float::<
-                1,
-                2,
-                1,
-                4,
-                0b0111,
-                0b0111,
-                { crate::bit::float8::NO_INF },
-
-                { bf8::FORMAT.frac },
-                { bf8::FORMAT.exp },
-                { bf8::FORMAT.bias },
-                8,
-                { bf8::FORMAT.max },
-                { bf8::FORMAT.nan },
-                {
-                    match bf8::FORMAT.inf {
-                        Some(v) => v,
-                        None => crate::bit::float8::NO_INF,
-                    }
-                },
-            >(
-                self.0
-            )
-        )
-    }
-
-    /// Converts to [`bf8uz`].
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use lowp::*;
-    /// let val = bf8uz::from_f32(2.0);
-    /// let f4_val = f4::from_f32(2.0);
-    /// assert_eq!(val, f4_val.to_bf8uz());
-    /// ```
-    pub const fn to_bf8uz(self) -> bf8uz {
-        bf8uz::from_bits(
-            crate::bit::cvt::float_to_float::<
-                1,
-                2,
-                1,
-                4,
-                0b0111,
-                0b0111,
-                { crate::bit::float8::NO_INF },
-
-                { bf8uz::FORMAT.frac },
-                { bf8uz::FORMAT.exp },
-                { bf8uz::FORMAT.bias },
-                8,
-                { bf8uz::FORMAT.max },
-                { bf8uz::FORMAT.nan },
-                {
-                    match bf8uz::FORMAT.inf {
-                        Some(v) => v,
-                        None => crate::bit::float8::NO_INF,
-                    }
-                },
-            >(
-                self.0
-            )
-        )
     }
 
     /// Returns `true` if and only if `self` has a positive sign, including +0.0, NaNs with a positive sign bit and +∞.
@@ -1166,6 +981,16 @@ impl From<f32> for f4 {
 impl From<f64> for f4 {
     fn from(value: f64) -> Self {
         f4::from_f64(value)
+    }
+}
+
+impl PartialEq for f4 {
+    fn eq(&self, other: &Self) -> bool {
+        if (self.0 & 0x7) == 0 && (other.0 & 0x7) == 0 {
+            true
+        } else {
+            self.0 == other.0
+        }
     }
 }
 

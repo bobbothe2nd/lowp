@@ -1,23 +1,8 @@
+use crate::bit::{NO_INF, any_float::is_nan};
+
 use super::{round_shift_u64, EXP32_MASK, EXP64_MASK, FRAC32_MASK, FRAC64_MASK, SIGN32, SIGN64};
 
-pub const NO_INF: u8 = 0xff;
 pub const SIGN: u8 = 0x80;
-
-#[inline(always)]
-pub const fn is_nan<const F: u8, const E: u8, const NAN: u8, const INF: u8>(x: u8) -> bool {
-    if const { INF != NO_INF } {
-        let exp_mask = const { (1u8 << E) - 1 };
-        let frac_mask = const { (1u8 << F) - 1 };
-        let exp = (x >> F) & exp_mask;
-        let frac = x & frac_mask;
-
-        exp == exp_mask && frac != 0
-    } else if const { NAN == 0x7f } {
-        x == 0x7f || x == 0xff
-    } else {
-        x == NAN
-    }
-}
 
 #[inline(always)]
 const fn decode_finite<const F: u8, const E: u8>(x: u8) -> i64 {
@@ -336,7 +321,7 @@ pub const fn addsub<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
+    if is_nan::<F, E, 8, NAN, INF>(a) || is_nan::<F, E, 8, NAN, INF>(b) {
         return NAN;
     }
 
@@ -448,7 +433,7 @@ pub const fn mul<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
+    if is_nan::<F, E, 8, NAN, INF>(a) || is_nan::<F, E, 8, NAN, INF>(b) {
         return NAN;
     }
 
@@ -592,7 +577,7 @@ pub const fn div<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
+    if is_nan::<F, E, 8, NAN, INF>(a) || is_nan::<F, E, 8, NAN, INF>(b) {
         return NAN;
     }
 
@@ -749,7 +734,7 @@ pub const fn rem<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) {
+    if is_nan::<F, E, 8, NAN, INF>(a) || is_nan::<F, E, 8, NAN, INF>(b) {
         return NAN;
     }
 
@@ -936,7 +921,7 @@ pub const fn fma<
     b: u8,
     c: u8,
 ) -> u8 {
-    if is_nan::<F, E, NAN, INF>(a) || is_nan::<F, E, NAN, INF>(b) || is_nan::<F, E, NAN, INF>(c) {
+    if is_nan::<F, E, 8, NAN, INF>(a) || is_nan::<F, E, 8, NAN, INF>(b) || is_nan::<F, E, 8, NAN, INF>(c) {
         return NAN;
     }
 

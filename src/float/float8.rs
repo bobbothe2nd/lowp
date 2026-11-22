@@ -1,24 +1,7 @@
-pub(super) struct FloatFormat8 {
-    /// exponent bits
-    pub exp: u8,
+use crate::float::FloatFormat;
 
-    /// fraction bits
-    pub frac: u8,
-
-    /// exponent bias.
-    pub bias: i8,
-
-    /// largest finite encoding, unsigned
-    pub max: u8,
-
-    /// canonical NaN encoding
-    pub nan: u8,
-
-    /// infinite encodding
-    pub inf: Option<u8>,
-}
-
-const E4M3: FloatFormat8 = FloatFormat8 {
+const E4M3: FloatFormat = FloatFormat {
+    width: 8,
     exp: 4,
     frac: 3,
     bias: 7,
@@ -27,7 +10,8 @@ const E4M3: FloatFormat8 = FloatFormat8 {
     inf: Some(0x78),
 };
 
-const E4M3FN: FloatFormat8 = FloatFormat8 {
+const E4M3FN: FloatFormat = FloatFormat {
+    width: 8,
     exp: 4,
     frac: 3,
     bias: 7,
@@ -36,7 +20,8 @@ const E4M3FN: FloatFormat8 = FloatFormat8 {
     inf: None,
 };
 
-const E4M3FNUZ: FloatFormat8 = FloatFormat8 {
+const E4M3FNUZ: FloatFormat = FloatFormat {
+    width: 8,
     exp: 4,
     frac: 3,
     bias: 8,
@@ -45,7 +30,8 @@ const E4M3FNUZ: FloatFormat8 = FloatFormat8 {
     inf: None,
 };
 
-const E5M2: FloatFormat8 = FloatFormat8 {
+const E5M2: FloatFormat = FloatFormat {
+    width: 8,
     exp: 5,
     frac: 2,
     bias: 15,
@@ -54,7 +40,8 @@ const E5M2: FloatFormat8 = FloatFormat8 {
     inf: Some(0x7c),
 };
 
-const E5M2FNUZ: FloatFormat8 = FloatFormat8 {
+const E5M2FNUZ: FloatFormat = FloatFormat {
+    width: 8,
     exp: 5,
     frac: 2,
     bias: 16,
@@ -108,7 +95,7 @@ macro_rules! impl_float8 {
         }
 
         impl $name {
-            pub(super) const FORMAT: FloatFormat8 = $format;
+            pub(super) const FORMAT: FloatFormat = $format;
 
             /// NaN value
             pub const NAN: Self = Self::from_bits($format.nan);
@@ -167,7 +154,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -190,7 +177,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -216,7 +203,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -239,7 +226,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -259,14 +246,15 @@ macro_rules! impl_float8 {
             /// ```
             #[inline]
             pub const fn is_nan(self) -> bool {
-                $crate::bit::float8::is_nan::<
+                $crate::bit::any_float::is_nan::<
                     { $format.frac },
                     { $format.exp },
                     { $format.nan },
+                    { $format.width },
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -558,257 +546,6 @@ macro_rules! impl_float8 {
                 }
             }
 
-            /// Converts to [`hf8`].
-            ///
-            /// # Examples
-            ///
-            /// ```rust
-            /// # use lowp::*;
-            #[doc = concat!("let val = ", stringify!($name), "::from_f32(2.0);")]
-            /// let hf8_val = hf8::from_f32(2.0);
-            /// assert_eq!(val.to_hf8(), hf8_val);
-            /// ```
-            pub const fn to_hf8(self) -> hf8 {
-                hf8::from_bits($crate::bit::cvt::float_to_float::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    8,
-                    { $format.max },
-                    { $format.nan },
-                    {
-                        match $format.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-
-                    { hf8::FORMAT.frac },
-                    { hf8::FORMAT.exp },
-                    { hf8::FORMAT.bias },
-                    8,
-                    { hf8::FORMAT.max },
-                    { hf8::FORMAT.nan },
-                    {
-                        match hf8::FORMAT.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-                >(
-                    self.0
-                ))
-            }
-
-            /// Converts to [`hf8fn`].
-            ///
-            /// # Examples
-            ///
-            /// ```rust
-            /// # use lowp::*;
-            #[doc = concat!("let val = ", stringify!($name), "::from_f32(2.0);")]
-            /// let hf8fn_val = hf8fn::from_f32(2.0);
-            /// assert_eq!(val.to_hf8fn(), hf8fn_val);
-            /// ```
-            pub const fn to_hf8fn(self) -> hf8fn {
-                hf8fn::from_bits($crate::bit::cvt::float_to_float::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    8,
-                    { $format.max },
-                    { $format.nan },
-                    {
-                        match $format.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-
-                    { hf8fn::FORMAT.frac },
-                    { hf8fn::FORMAT.exp },
-                    { hf8fn::FORMAT.bias },
-                    8,
-                    { hf8fn::FORMAT.max },
-                    { hf8fn::FORMAT.nan },
-                    {
-                        match hf8fn::FORMAT.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-                >(
-                    self.0
-                ))
-            }
-
-            /// Converts to [`hf8uz`].
-            ///
-            /// # Examples
-            ///
-            /// ```rust
-            /// # use lowp::*;
-            #[doc = concat!("let val = ", stringify!($name), "::from_f32(2.0);")]
-            /// let hf8uz_val = hf8uz::from_f32(2.0);
-            /// assert_eq!(val.to_hf8uz(), hf8uz_val);
-            /// ```
-            pub const fn to_hf8uz(self) -> hf8uz {
-                hf8uz::from_bits($crate::bit::cvt::float_to_float::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    8,
-                    { $format.max },
-                    { $format.nan },
-                    {
-                        match $format.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-
-                    { hf8uz::FORMAT.frac },
-                    { hf8uz::FORMAT.exp },
-                    { hf8uz::FORMAT.bias },
-                    8,
-                    { hf8uz::FORMAT.max },
-                    { hf8uz::FORMAT.nan },
-                    {
-                        match hf8uz::FORMAT.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-                >(
-                    self.0
-                ))
-            }
-
-            /// Converts to [`bf8`].
-            ///
-            /// # Examples
-            ///
-            /// ```rust
-            /// # use lowp::*;
-            #[doc = concat!("let val = ", stringify!($name), "::from_f32(2.0);")]
-            /// let bf8_val = bf8::from_f32(2.0);
-            /// assert_eq!(val.to_bf8(), bf8_val);
-            /// ```
-            pub const fn to_bf8(self) -> bf8 {
-                bf8::from_bits($crate::bit::cvt::float_to_float::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    8,
-                    { $format.max },
-                    { $format.nan },
-                    {
-                        match $format.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-
-                    { bf8::FORMAT.frac },
-                    { bf8::FORMAT.exp },
-                    { bf8::FORMAT.bias },
-                    8,
-                    { bf8::FORMAT.max },
-                    { bf8::FORMAT.nan },
-                    {
-                        match bf8::FORMAT.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-                >(
-                    self.0
-                ))
-            }
-
-            /// Converts to [`bf8uz`].
-            ///
-            /// # Examples
-            ///
-            /// ```rust
-            /// # use lowp::*;
-            #[doc = concat!("let val = ", stringify!($name), "::from_f32(2.0);")]
-            /// let bf8uz_val = bf8uz::from_f32(2.0);
-            /// assert_eq!(val.to_bf8uz(), bf8uz_val);
-            /// ```
-            pub const fn to_bf8uz(self) -> bf8uz {
-                bf8uz::from_bits($crate::bit::cvt::float_to_float::<
-                    { $format.frac },
-                    { $format.exp },
-                    { $format.bias },
-                    8,
-                    { $format.max },
-                    { $format.nan },
-                    {
-                        match $format.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-
-                    { bf8uz::FORMAT.frac },
-                    { bf8uz::FORMAT.exp },
-                    { bf8uz::FORMAT.bias },
-                    8,
-                    { bf8uz::FORMAT.max },
-                    { bf8uz::FORMAT.nan },
-                    {
-                        match bf8uz::FORMAT.inf {
-                            Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
-                        }
-                    },
-                >(
-                    self.0
-                ))
-            }
-
-            /// Converts to [`f4`].
-            ///
-            /// # Examples
-            ///
-            /// ```rust
-            /// # use lowp::*;
-            #[doc = concat!("let val = ", stringify!($name), "::from_f32(2.0);")]
-            /// let f4_val = f4::from_f32(2.0);
-            /// assert_eq!(val.to_f4(), f4_val);
-            /// ```
-            pub const fn to_f4(self) -> $crate::f4 {
-                unsafe {
-                    $crate::f4::from_bits_unchecked(
-                        $crate::bit::cvt::float_to_float::<
-                            { $format.frac },
-                            { $format.exp },
-                            { $format.bias },
-                            8,
-                            { $format.max },
-                            { $format.nan },
-                            {
-                                match $format.inf {
-                                    Some(v) => v,
-                                    None => $crate::bit::float8::NO_INF,
-                                }
-                            },
-
-                            1,
-                            2,
-                            1,
-                            4,
-                            0b0111,
-                            0b0111,
-                            { $crate::bit::float8::NO_INF },
-                        >(
-                            self.0
-                        )
-                    )
-                }
-            }
-
             /// `self + rhs`
             #[inline]
             pub const fn add_const(self, rhs: Self) -> Self {
@@ -821,7 +558,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                     false,
@@ -840,7 +577,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                     true,
@@ -859,7 +596,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0, rhs.0))
@@ -877,7 +614,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0, rhs.0))
@@ -895,7 +632,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0, rhs.0))
@@ -913,7 +650,7 @@ macro_rules! impl_float8 {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0, a.0, b.0))

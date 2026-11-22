@@ -1,4 +1,4 @@
-use crate::bit::{float8::NO_INF, round_shift_u64};
+use crate::bit::{NO_INF, round_shift_u64};
 
 #[inline(always)]
 pub const fn float_to_float<

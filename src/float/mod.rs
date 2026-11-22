@@ -101,7 +101,7 @@ macro_rules! impl_half_cvt {
             ///
             /// This operation is lossy.
             ///
-            /// - If the 16-bit value is to large to fit in 8-bits, ±∞ will result.
+            /// - If the 16-bit value is too large to fit in 8-bits, ±∞ will result.
             /// - NaN values are preserved.
             /// - 16-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
             /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
@@ -116,7 +116,7 @@ macro_rules! impl_half_cvt {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -126,7 +126,7 @@ macro_rules! impl_half_cvt {
             ///
             /// This operation is lossy.
             ///
-            /// - If the 16-bit value is to large to fit in 8-bits, ±∞ will result.
+            /// - If the 16-bit value is too large to fit in 8-bits, ±∞ will result.
             /// - NaN values are preserved.
             /// - 16-bit subnormal values are too tiny to be represented in 8-bits and result in ±0.
             /// - Exponents that underflow the minimum 8-bit exponent will result in 8-bit subnormals or ±0.
@@ -141,7 +141,7 @@ macro_rules! impl_half_cvt {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(x))
@@ -163,7 +163,7 @@ macro_rules! impl_half_cvt {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -185,7 +185,7 @@ macro_rules! impl_half_cvt {
                     {
                         match $format.inf {
                             Some(v) => v,
-                            None => $crate::bit::float8::NO_INF,
+                            None => $crate::bit::NO_INF,
                         }
                     },
                 >(self.0)
@@ -215,17 +215,52 @@ macro_rules! impl_half_cvt {
     };
 }
 
-mod float8;
-pub use self::float8::*;
-
-mod float4;
-pub use self::float4::*;
-
-#[cfg(feature = "num-traits")]
-mod num_traits;
-
 macro_rules! impl_cvt {
-    ($($ty:ident -> $from:ident $cvt:ident -> $out_ty:ident)*) => {$(
+    ($($ty:ident -> $from:ident $to:ident -> $out_ty:ident)*) => {$(
+        impl $ty {
+            #[doc = concat!("Converts to ", stringify!($out_ty), ".")]
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let a = ", stringify!($ty), "::from_f32(2.0);")]
+            #[doc = concat!("let b = ", stringify!($out_ty), "::from_f32(2.0);")]
+            #[doc = concat!("assert_eq!(a.", stringify!($to), "(), b);")]
+            /// ```
+            #[inline]
+            pub const fn $to(self) -> $out_ty {
+                $out_ty::from_bits($crate::bit::cvt::float_to_float::<
+                    { Self::FORMAT.frac },
+                    { Self::FORMAT.exp },
+                    { Self::FORMAT.bias },
+                    { Self::FORMAT.width },
+                    { Self::FORMAT.max },
+                    { Self::FORMAT.nan },
+                    {
+                        match Self::FORMAT.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+
+                    { $out_ty::FORMAT.frac },
+                    { $out_ty::FORMAT.exp },
+                    { $out_ty::FORMAT.bias },
+                    { $out_ty::FORMAT.width },
+                    { $out_ty::FORMAT.max },
+                    { $out_ty::FORMAT.nan },
+                    {
+                        match $out_ty::FORMAT.inf {
+                            Some(v) => v,
+                            None => $crate::bit::NO_INF,
+                        }
+                    },
+                >(
+                    self.to_bits()
+                ))
+            }
+        }
         impl $out_ty {
             /// Converts 
             ///
@@ -237,14 +272,22 @@ macro_rules! impl_cvt {
             #[doc = concat!("let b = ", stringify!($out_ty), "::from_", stringify!($ty), "(a);")]
             #[doc = concat!("assert_eq!(a.to_", stringify!($out_ty), "(), b);")]
             /// ```
+            #[inline]
             pub const fn $from(val: $ty) -> Self {
-                val.$cvt()
+                val.$to()
             }
 
         }
         impl From<$ty> for $out_ty {
+            #[inline]
             fn from(val: $ty) -> Self {
-                val.$cvt()
+                val.$to()
+            }
+        }
+        #[cfg(feature = "num-traits")]
+        impl num_traits::AsPrimitive<$out_ty> for $ty {
+            fn as_(self) -> $out_ty {
+                self.$to()
             }
         }
     )*};
@@ -252,38 +295,88 @@ macro_rules! impl_cvt {
 
 impl_cvt!(
     hf8 -> from_hf8 to_f4 -> f4
+    hf8 -> from_hf8 to_hf6 -> hf6
+    hf8 -> from_hf8 to_bf6 -> bf6
     hf8 -> from_hf8 to_hf8fn -> hf8fn
     hf8 -> from_hf8 to_hf8uz -> hf8uz
     hf8 -> from_hf8 to_bf8 -> bf8
     hf8 -> from_hf8 to_bf8uz -> bf8uz
 
     hf8fn -> from_hf8fn to_f4 -> f4
+    hf8fn -> from_hf8fn to_hf6 -> hf6
+    hf8fn -> from_hf8fn to_bf6 -> bf6
     hf8fn -> from_hf8fn to_hf8 -> hf8
     hf8fn -> from_hf8fn to_hf8uz -> hf8uz
     hf8fn -> from_hf8fn to_bf8 -> bf8
     hf8fn -> from_hf8fn to_bf8uz -> bf8uz
 
     hf8uz -> from_hf8uz to_f4 -> f4
+    hf8uz -> from_hf8uz to_hf6 -> hf6
+    hf8uz -> from_hf8uz to_bf6 -> bf6
     hf8uz -> from_hf8uz to_hf8 -> hf8
     hf8uz -> from_hf8uz to_hf8fn -> hf8fn
     hf8uz -> from_hf8uz to_bf8 -> bf8
     hf8uz -> from_hf8uz to_bf8uz -> bf8uz
 
     bf8 -> from_bf8 to_f4 -> f4
+    bf8 -> from_bf8 to_hf6 -> hf6
+    bf8 -> from_bf8 to_bf6 -> bf6
     bf8 -> from_bf8 to_hf8 -> hf8
     bf8 -> from_bf8 to_hf8fn -> hf8fn
     bf8 -> from_bf8 to_hf8uz -> hf8uz
     bf8 -> from_bf8 to_bf8uz -> bf8uz
 
     bf8uz -> from_bf8uz to_f4 -> f4
+    bf8uz -> from_bf8uz to_hf6 -> hf6
+    bf8uz -> from_bf8uz to_bf6 -> bf6
     bf8uz -> from_bf8uz to_hf8 -> hf8
     bf8uz -> from_bf8uz to_hf8fn -> hf8fn
     bf8uz -> from_bf8uz to_bf8 -> bf8
     bf8uz -> from_bf8uz to_hf8uz -> hf8uz
 
+    f4 -> from_f4 to_hf6 -> hf6
+    f4 -> from_f4 to_bf6 -> bf6
     f4 -> from_f4 to_hf8 -> hf8
     f4 -> from_f4 to_hf8fn -> hf8fn
     f4 -> from_f4 to_hf8uz -> hf8uz
     f4 -> from_f4 to_bf8 -> bf8
     f4 -> from_f4 to_bf8uz -> bf8uz
+
+    bf6 -> from_bf6 to_f4 -> f4
+    bf6 -> from_bf6 to_hf6 -> hf6
+    bf6 -> from_bf6 to_hf8 -> hf8
+    bf6 -> from_bf6 to_hf8fn -> hf8fn
+    bf6 -> from_bf6 to_hf8uz -> hf8uz
+    bf6 -> from_bf6 to_bf8 -> bf8
+    bf6 -> from_bf6 to_bf8uz -> bf8uz
+
+    hf6 -> from_hf6 to_f4 -> f4
+    hf6 -> from_hf6 to_bf6 -> bf6
+    hf6 -> from_hf6 to_hf8 -> hf8
+    hf6 -> from_hf6 to_hf8fn -> hf8fn
+    hf6 -> from_hf6 to_hf8uz -> hf8uz
+    hf6 -> from_hf6 to_bf8 -> bf8
+    hf6 -> from_hf6 to_bf8uz -> bf8uz
 );
+
+struct FloatFormat {
+    pub width: u8,
+    pub exp: u8,
+    pub frac: u8,
+    pub bias: i8,
+    pub max: u8,
+    pub nan: u8,
+    pub inf: Option<u8>,
+}
+
+mod float8;
+pub use float8::*;
+
+mod float6;
+pub use float6::*;
+
+mod float4;
+pub use float4::*;
+
+#[cfg(feature = "num-traits")]
+mod num_traits;

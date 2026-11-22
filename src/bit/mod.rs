@@ -1,3 +1,4 @@
+pub const NO_INF: u8 = 0xff;
 pub const SIGN64: u64 = 0x8000_0000_0000_0000;
 pub const EXP64_MASK: u64 = 0x7ff0_0000_0000_0000;
 pub const FRAC64_MASK: u64 = 0x000f_ffff_ffff_ffff;
@@ -30,7 +31,10 @@ const fn round_shift_u64(x: u64, shift: u32) -> u64 {
 
 pub mod lut;
 
+pub mod any_float;
+
 pub mod float4;
+pub mod float6;
 pub mod float8;
 
 pub mod cvt;
