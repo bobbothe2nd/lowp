@@ -9,6 +9,10 @@ Provides an extensive set of small float formats:
 - `bf8uz`: 8-bit float format E5M2FNUZ
 - `f4`: 4-bit float format E2M1
 - `f4x2`: 2 packed `f4` into 1 byte
+- `hf6`: 6-bit float format E2M3
+- `hf6x4`: 4 packed `hf6` into 3 bytes
+- `bf6`: 6-bit float format E3M2
+- `bf6x4`: 4 packed `bf6` into 3 bytes
 
 ## Crate Features
 

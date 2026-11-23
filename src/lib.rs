@@ -7,7 +7,11 @@
 //! * [`bf8`]: 5-bit exponent, 2-bit mantissa, signed zero, infinities
 //! * [`bf8uz`]: 5-bit exponent, 2-bit mantissa, unsigned zero, finite
 //! * [`f4`]: 2-bit exponent, 1-bit mantissa, signed zero, finite
-//! * [`f4x2`]: 2 packed `f4` into a byte
+//! * [`f4x2`]: 2 packed [`f4`] into a byte
+//! * [`hf6`]: 2-bit exponent, 3-bit mantissa, signed zero, finite
+//! * [`hf6x4`]: 2 packed [`hf6`] into a byte
+//! * [`bf6`]: 3-bit exponent, 2-bit mantissa, signed zero, finite
+//! * [`bf6x4`]: 2 packed [`bf6`] into a byte
 
 #![no_std]
 #![forbid(missing_docs, unconditional_recursion)]
