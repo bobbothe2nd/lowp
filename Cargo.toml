@@ -9,8 +9,6 @@ documentation = "https://docs.rs/lowp"
 repository = "https://github.com/bobbothe2nd/lowp"
 
 [features]
-default = ["half"]
-
 # use standard library
 alloc = []
 std = ["num-traits?/std"]

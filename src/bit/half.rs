@@ -1,8 +1,6 @@
 use half::{bf16, f16};
 
-use crate::bit::{
-    NO_INF, ops::sign_mask, round_shift_u64,
-};
+use crate::bit::{ops::sign_mask, round_shift_u64, NO_INF};
 
 #[inline(always)]
 pub const fn f8_from_f16<
@@ -96,14 +94,10 @@ pub const fn f8_from_f16<
             return sign | MAX;
         }
 
-        return sign
-            | (((target_exp + 1) as u8) << F)
-            | (sig as u8 & frac_mask);
+        return sign | (((target_exp + 1) as u8) << F) | (sig as u8 & frac_mask);
     }
 
-    sign
-        | ((target_exp as u8) << F)
-        | (sig as u8 & frac_mask)
+    sign | ((target_exp as u8) << F) | (sig as u8 & frac_mask)
 }
 
 #[inline(always)]
@@ -256,14 +250,10 @@ pub const fn f8_from_bf16<
             return sign | MAX;
         }
 
-        return sign
-            | (((target_exp + 1) as u8) << F)
-            | (sig as u8 & frac_mask);
+        return sign | (((target_exp + 1) as u8) << F) | (sig as u8 & frac_mask);
     }
 
-    sign
-        | ((target_exp as u8) << F)
-        | (sig as u8 & frac_mask)
+    sign | ((target_exp as u8) << F) | (sig as u8 & frac_mask)
 }
 
 #[inline(always)]

@@ -1,4 +1,4 @@
-use crate::bit::{NO_INF, round_shift_u64};
+use crate::bit::{round_shift_u64, NO_INF};
 
 mod add;
 mod div;
@@ -17,17 +17,11 @@ pub const fn add<
     const MAX: u8,
     const NAN: u8,
     const INF: u8,
->(a: u8, b: u8) -> u8 {
-    add::addsub::<
-        F,
-        E,
-        B,
-        W,
-        MAX,
-        NAN,
-        INF,
-        false,
-    >(a, b)
+>(
+    a: u8,
+    b: u8,
+) -> u8 {
+    add::addsub::<F, E, B, W, MAX, NAN, INF, false>(a, b)
 }
 
 #[inline(always)]
@@ -39,43 +33,11 @@ pub const fn sub<
     const MAX: u8,
     const NAN: u8,
     const INF: u8,
->(a: u8, b: u8) -> u8 {
-    add::addsub::<
-        F,
-        E,
-        B,
-        W,
-        MAX,
-        NAN,
-        INF,
-        true,
-    >(a, b)
-}
-
-#[cfg(feature = "lut-f4")]
-pub const fn inv1<
-    const F: u8,
-    const E: u8,
-    const B: i8,
-    const W: u8,
-    const MAX: u8,
-    const NAN: u8,
-    const INF: u8,
->(_x: u8) -> u8 {
-    unimplemented!()
-}
-
-#[cfg(feature = "lut-f4")]
-pub const fn inv2<
-    const F: u8,
-    const E: u8,
-    const B: i8,
-    const W: u8,
-    const MAX: u8,
-    const NAN: u8,
-    const INF: u8,
->(_a: u8, _b: u8) -> u8 {
-    unimplemented!()
+>(
+    a: u8,
+    b: u8,
+) -> u8 {
+    add::addsub::<F, E, B, W, MAX, NAN, INF, true>(a, b)
 }
 
 #[inline(always)]
@@ -102,9 +64,7 @@ pub const fn sign_mask<const W: u8>() -> u8 {
 }
 
 #[inline(always)]
-pub const fn encode_zero<const W: u8, const NAN: u8>(
-    negative: bool,
-) -> u8 {
+pub const fn encode_zero<const W: u8, const NAN: u8>(negative: bool) -> u8 {
     if const { NAN == sign_mask::<W>() } {
         0
     } else if negative {
@@ -194,8 +154,7 @@ pub const fn encode_finite<
 
     let frac_mask = const { (1u8 << F) - 1 };
 
-    let encoded =
-        ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
+    let encoded = ((encoded_exp as u8) << F) | (sig as u8 & frac_mask);
 
     if encoded > MAX {
         return if const { INF != NO_INF } {

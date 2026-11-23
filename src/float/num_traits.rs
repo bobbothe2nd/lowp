@@ -169,12 +169,14 @@ macro_rules! impl_num_traits {
     };
 }
 
+impl_num_traits!(f4);
+impl_num_traits!(hf6);
+impl_num_traits!(bf6);
 impl_num_traits!(hf8);
 impl_num_traits!(hf8fn);
 impl_num_traits!(hf8uz);
 impl_num_traits!(bf8);
 impl_num_traits!(bf8uz);
-impl_num_traits!(f4);
 
 macro_rules! impl_float {
     ($ty:ident) => {

@@ -1,10 +1,4 @@
-use lowp::{
-    bf6, hf6,
-    bf8, bf8uz,
-    hf8, hf8fn, hf8uz,
-    f4,
-    bf6x4, hf6x4, f4x2,
-};
+use lowp::{bf6, bf6x4, bf8, bf8uz, f4, f4x2, hf6, hf6x4, hf8, hf8fn, hf8uz};
 
 fn main() {
     // scalar construction

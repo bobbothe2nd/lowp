@@ -237,7 +237,7 @@ pub const unsafe fn div(a: u8, b: u8) -> u8 {
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn div_euclid(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 4)
+    lut!(LUT_F4, __none, a, b, 4)
 }
 
 #[inline(always)]
@@ -248,37 +248,37 @@ pub const unsafe fn rem(a: u8, b: u8) -> u8 {
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn log(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 6)
+    lut!(LUT_F4, __none, a, b, 6)
 }
 
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn atan2(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 7)
+    lut!(LUT_F4, __none, a, b, 7)
 }
 
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn powf(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 8)
+    lut!(LUT_F4, __none, a, b, 8)
 }
 
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn hypot(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 9)
+    lut!(LUT_F4, __none, a, b, 9)
 }
 
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn midpoint(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 10)
+    lut!(LUT_F4, __none, a, b, 10)
 }
 
 #[inline(always)]
 #[cfg(feature = "lut-f4")]
 pub const unsafe fn rem_euclid(a: u8, b: u8) -> u8 {
-    lut!(LUT_F4, inv2, a, b, 11)
+    lut!(LUT_F4, __none, a, b, 11)
 }
 
 #[inline(always)]

@@ -1,5 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask, encode_finite, encode_zero},
+    ops::{encode_finite, encode_zero, is_nan, sign_mask},
     NO_INF,
 };
 
@@ -16,9 +16,7 @@ pub const fn div<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a)
-        || is_nan::<F, E, W, MAX, NAN, INF>(b)
-    {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
         return NAN;
     }
 
@@ -39,11 +37,7 @@ pub const fn div<
 
         if a_inf || b_inf {
             if a_inf && b_inf {
-                return if const { NAN != MAX } {
-                    sm
-                } else {
-                    0
-                } | NAN;
+                return if const { NAN != MAX } { sm } else { 0 } | NAN;
             }
 
             if a_inf {
@@ -56,11 +50,7 @@ pub const fn div<
 
     if b_zero {
         if a_zero {
-            return if const { NAN != MAX } {
-                sm
-            } else {
-                0
-            } | NAN;
+            return if const { NAN != MAX } { sm } else { 0 } | NAN;
         }
 
         return if const { INF != NO_INF } {
@@ -126,11 +116,7 @@ pub const fn div<
             round_div_u64(a_sig, b_sig << (-scale) as u32)
         };
 
-        return encode_finite::<F, E, B, W, MAX, NAN, INF>(
-            negative,
-            sub_sig,
-            min_subnormal_exp,
-        );
+        return encode_finite::<F, E, B, W, MAX, NAN, INF>(negative, sub_sig, min_subnormal_exp);
     }
 
     let scale = power - target_exp + F as i32;
@@ -141,11 +127,7 @@ pub const fn div<
         round_div_u64(a_sig, b_sig << (-scale) as u32)
     };
 
-    encode_finite::<F, E, B, W, MAX, NAN, INF>(
-        negative,
-        mantissa,
-        target_exp - F as i32,
-    )
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(negative, mantissa, target_exp - F as i32)
 }
 
 #[inline(always)]

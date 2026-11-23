@@ -13,8 +13,8 @@ Provides an extensive set of small float formats:
 ## Crate Features
 
 - `alloc`: Enable features that depend on the Rust `alloc` library
-- `std`: Enable features that depend on the Rust standard library
-- `libm`: Enable the `libm` feature for `num-traits`
+- `std`: Enable features that depend on the Rust standard library (and implement the `num_traits::Float` trait in `no_std`)
+- `libm`: Enable the `libm` feature for `num-traits` to implement the `Float` trait in `no_std`
 - `serde`: Add support for the `serde` crate with `Serialize` (and `Deserialize` eventually) traits
 - `num-traits`: Implement traits from `num-traits` such as `ToPrimitive`, `FromPrimitive`, `AsPrimitive`, `Num`, `Float`, `FloatCore`, and `Bounded`.
 - `bytemuck`: Implement traits from `bytemuck` including `Zeroable` and `Pod`

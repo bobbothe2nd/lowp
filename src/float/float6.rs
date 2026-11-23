@@ -87,7 +87,7 @@ macro_rules! impl_float6 {
             #[doc = concat!("[`", stringify!($name), "::ZERO`].")]
             #[inline]
             #[cfg(feature = "alloc")]
-            pub fn pack(values: &[$name]) -> Box<[Self]> {
+            pub fn pack(values: &[$name]) -> ::alloc::boxed::Box<[Self]> {
                 values
                     .chunks(4)
                     .map(|chunk| {
@@ -95,7 +95,7 @@ macro_rules! impl_float6 {
                         let b = if chunk.len() > 1 { chunk[1] } else { $name::ZERO };
                         let c = if chunk.len() > 2 { chunk[2] } else { $name::ZERO };
                         let d = if chunk.len() > 3 { chunk[3] } else { $name::ZERO };
-                        bf6x4::new(a, b, c, d)
+                        Self::new(a, b, c, d)
                     })
                     .collect()
             }
@@ -103,8 +103,8 @@ macro_rules! impl_float6 {
             #[doc = concat!("Unpacks [`", stringify!($vec), "`] groups into individual [`", stringify!($name), "`] values.")]
             #[inline]
             #[cfg(feature = "alloc")]
-            pub fn unpack(packed: &[Self]) -> Box<[$name]> {
-                let mut result = Box::new_uninit_slice(packed.len() * 4);
+            pub fn unpack(packed: &[Self]) -> ::alloc::boxed::Box<[$name]> {
+                let mut result = ::alloc::boxed::Box::new_uninit_slice(packed.len() * 4);
                 for (pos, &group) in packed.iter().enumerate() {
                     result[pos * 4].write(group.get::<0>());
                     result[pos * 4 + 1].write(group.get::<1>());
@@ -126,7 +126,7 @@ macro_rules! impl_float6 {
         #[cfg_attr(feature = "serde", derive(serde::Serialize))]
         #[cfg_attr(feature = "bytemuck", derive(bytemuck::Zeroable, bytemuck::Pod))]
         #[cfg_attr(feature = "zerocopy", derive(zerocopy::AsBytes, zerocopy::FromBytes))]
-        #[cfg_attr(feature = "stable_auto", stable_auto::Auto)]
+        #[cfg_attr(feature = "stable_auto", derive(stable_auto::Auto))]
         #[repr(transparent)]
         pub struct $name(u8);
 
@@ -334,6 +334,172 @@ macro_rules! impl_float6 {
             #[inline]
             pub const fn is_sign_negative(self) -> bool {
                 self.0 & 0x20 != 0
+            }
+
+            /// Returns `true` if the number is neither zero, infinite, subnormal, or `NaN` and `false` otherwise.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let min = ", stringify!($name), "::MIN_POSITIVE;")]
+            #[doc = concat!("let max = ", stringify!($name), "::MAX;")]
+            #[doc = concat!("let lower_than_min = ", stringify!($name), "::from_f32(1.0e-10);")]
+            #[doc = concat!("let zero = ", stringify!($name), "::ZERO;")]
+            ///
+            /// assert!(min.is_normal());
+            /// assert!(max.is_normal());
+            ///
+            /// assert!(!zero.is_normal());
+            #[doc = concat!("assert!(!", stringify!($name), "::NAN.is_normal());")]
+            /// // Values between `0` and `min` are Subnormal.
+            /// assert!(!lower_than_min.is_normal());
+            /// ```
+            pub const fn is_normal(&self) -> bool {
+                let exp = self.0 & const { ((1 << $format.exp) - 1) << $format.frac };
+                exp != 0
+            }
+
+            /// Returns a number that represents the sign of `self`.
+            ///
+            /// * `1.0` if the number is positive, `+0.0` or `INFINITY`
+            /// * `-1.0` if the number is negative, `-0.0` or `NEG_INFINITY`
+            /// * [`NAN`][Self::NAN] if the number is `NaN`
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let f = ", stringify!($name), "::from_f32(3.5_f32);")]
+            ///
+            #[doc = concat!("assert_eq!(f.signum(), ", stringify!($name), "::from_f32(1.0));")]
+            ///
+            #[doc = concat!("assert!(", stringify!($name), "::NAN.signum().is_nan());")]
+            /// ```
+            #[inline]
+            pub const fn signum(self) -> Self {
+                if self.0 & 0x3f == 0 {
+                    self
+                } else if self.0 & 0x20 != 0 {
+                    Self::NEG_ONE
+                } else {
+                    Self::ONE
+                }
+            }
+
+            /// Computes the absolute value of `self`.
+            ///
+            /// This function always returns the precise result.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let x = ", stringify!($name), "::from_f32(3.5);")]
+            #[doc = concat!("let y = ", stringify!($name), "::from_f32(-3.5);")]
+            ///
+            /// assert_eq!(x.abs(), x);
+            /// assert_eq!(y.abs(), -y);
+            /// ```
+            #[inline]
+            pub const fn abs(self) -> Self {
+                Self::from_bits(self.0 & 0x3f)
+            }
+
+            /// Returns a number composed of the magnitude of `self` and the sign of `sign`.
+            ///
+            /// Equal to `self` if the sign of `self` and `sign` are the same, otherwise equal to `-self`.
+            /// If `self` is NaN, then NaN with the sign of `sign` is returned.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let f = ", stringify!($name), "::from_f32(3.5);")]
+            ///
+            #[doc = concat!("assert_eq!(f.copysign(", stringify!($name), "::from_f32(0.42)), ", stringify!($name), "::from_f32(3.5));")]
+            #[doc = concat!("assert_eq!(f.copysign(", stringify!($name), "::from_f32(-0.42)), ", stringify!($name), "::from_f32(-3.5));")]
+            #[doc = concat!("assert_eq!((-f).copysign(", stringify!($name), "::from_f32(0.42)), ", stringify!($name), "::from_f32(3.5));")]
+            #[doc = concat!("assert_eq!((-f).copysign(", stringify!($name), "::from_f32(-0.42)), ", stringify!($name), "::from_f32(-3.5));")]
+            ///
+            #[doc = concat!("assert!(", stringify!($name), "::NAN.copysign(", stringify!($name), "::from_f32(1.0)).is_nan());")]
+            /// ```
+            #[inline]
+            pub const fn copysign(self, sign: Self) -> Self {
+                Self::from_bits((self.0 & 0x3f) | (sign.0 & 0x20))
+            }
+
+            /// Returns the minimum of the two numbers.
+            ///
+            /// If one of the arguments is NaN, then the other argument is returned.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let x = ", stringify!($name), "::from_f32(1.0);")]
+            #[doc = concat!("let y = ", stringify!($name), "::from_f32(2.0);")]
+            ///
+            /// assert_eq!(x.min(y), x);
+            /// ```
+            pub fn min(self, other: Self) -> Self {
+                if other < self {
+                    other
+                } else {
+                    self
+                }
+            }
+
+            /// Returns the maximum of the two numbers.
+            ///
+            /// If one of the arguments is NaN, then the other argument is returned.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("let x = ", stringify!($name), "::from_f32(1.0);")]
+            #[doc = concat!("let y = ", stringify!($name), "::from_f32(2.0);")]
+            ///
+            /// assert_eq!(x.max(y), y);
+            /// ```
+            pub fn max(self, other: Self) -> Self {
+                if other > self {
+                    other
+                } else {
+                    self
+                }
+            }
+
+            /// Restrict a value to a certain interval unless it is NaN.
+            ///
+            /// Returns `max` if `self` is greater than `max`, and `min` if `self` is less than `min`.
+            /// Otherwise this returns `self`.
+            ///
+            /// Note that this function returns NaN if the initial value was NaN as well.
+            ///
+            /// # Panics
+            /// Panics if `min > max`, `min` is NaN, or `max` is NaN.
+            ///
+            /// # Examples
+            ///
+            /// ```rust
+            /// # use lowp::*;
+            #[doc = concat!("assert_eq!(", stringify!($name), "::from_f32(-3.0).clamp(", stringify!($name), "::from_f32(-2.0), ", stringify!($name), "::from_f32(1.0)),", stringify!($name), "::from_f32(-2.0));")]
+            #[doc = concat!("assert_eq!(", stringify!($name), "::from_f32(0.0).clamp(", stringify!($name), "::from_f32(-2.0), ", stringify!($name), "::from_f32(1.0)),", stringify!($name), "::from_f32(0.0));")]
+            #[doc = concat!("assert_eq!(", stringify!($name), "::from_f32(2.0).clamp(", stringify!($name), "::from_f32(-2.0), ", stringify!($name), "::from_f32(1.0)),", stringify!($name), "::from_f32(1.0));")]
+            #[doc = concat!("assert!(", stringify!($name), "::NAN.clamp(", stringify!($name), "::from_f32(-2.0), ", stringify!($name), "::from_f32(1.0)).is_nan());")]
+            /// ```
+            pub fn clamp(self, min: Self, max: Self) -> Self {
+                assert!(min <= max);
+                let mut x = self;
+                if x < min {
+                    x = min;
+                }
+                if x > max {
+                    x = max;
+                }
+                x
             }
 
             /// `self + rhs`

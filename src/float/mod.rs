@@ -45,12 +45,14 @@ macro_rules! impl_constants {
     };
 }
 
+impl_constants!(f4);
+impl_constants!(hf6);
+impl_constants!(bf6);
 impl_constants!(hf8);
 impl_constants!(hf8fn);
 impl_constants!(hf8uz);
 impl_constants!(bf8);
 impl_constants!(bf8uz);
-impl_constants!(f4);
 
 macro_rules! impl_io {
     ($name:ident) => {
@@ -339,12 +341,6 @@ macro_rules! impl_cvt {
             #[inline]
             fn from(val: $ty) -> Self {
                 val.$to()
-            }
-        }
-        #[cfg(feature = "num-traits")]
-        impl num_traits::AsPrimitive<$out_ty> for $ty {
-            fn as_(self) -> $out_ty {
-                self.$to()
             }
         }
     )*};

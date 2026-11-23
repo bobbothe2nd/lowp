@@ -1,5 +1,6 @@
 use crate::bit::{
-    NO_INF, ops::{encode_finite, encode_zero, is_nan, sign_mask},
+    ops::{encode_finite, encode_zero, is_nan, sign_mask},
+    NO_INF,
 };
 
 #[inline(always)]
@@ -15,9 +16,7 @@ pub const fn mul<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a)
-        || is_nan::<F, E, W, MAX, NAN, INF>(b)
-    {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
         return NAN;
     }
 
@@ -76,9 +75,5 @@ pub const fn mul<
         )
     };
 
-    encode_finite::<F, E, B, W, MAX, NAN, INF>(
-        negative,
-        a_sig * b_sig,
-        a_power + b_power,
-    )
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(negative, a_sig * b_sig, a_power + b_power)
 }

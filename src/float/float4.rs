@@ -1,5 +1,8 @@
 use core::{
-    cmp::Ordering, fmt::{self, Debug, Formatter}, hint::assert_unchecked, ops::{Add, Div, Mul, Neg, Rem, Sub},
+    cmp::Ordering,
+    fmt::{self, Debug, Formatter},
+    hint::assert_unchecked,
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
 #[cfg(feature = "alloc")]

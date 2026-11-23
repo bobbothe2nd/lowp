@@ -1,5 +1,6 @@
 use crate::bit::{
-    NO_INF, ops::{encode_finite, encode_zero, is_nan, sign_mask},
+    ops::{encode_finite, encode_zero, is_nan, sign_mask},
+    NO_INF,
 };
 
 #[inline(always)]
@@ -63,10 +64,8 @@ pub const fn fma<
 
     if a_zero || b_zero {
         if c_zero {
-            if c_zero {
-                let negative = product_sign == c_sign && product_sign != 0;
-                return encode_zero::<W, NAN>(negative);
-            }
+            let negative = product_sign == c_sign && product_sign != 0;
+            return encode_zero::<W, NAN>(negative);
         }
 
         return c;
@@ -139,9 +138,5 @@ pub const fn fma<
         return 0;
     }
 
-    encode_finite::<F, E, B, W, MAX, NAN, INF>(
-        negative,
-        magnitude,
-        base_power,
-    )
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(negative, magnitude, base_power)
 }

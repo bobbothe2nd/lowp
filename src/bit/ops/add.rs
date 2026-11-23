@@ -1,5 +1,6 @@
 use crate::bit::{
-    NO_INF, ops::{encode_finite, is_nan, sign_mask},
+    ops::{encode_finite, is_nan, sign_mask},
+    NO_INF,
 };
 
 #[inline(always)]
@@ -16,9 +17,7 @@ pub const fn addsub<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a)
-        || is_nan::<F, E, W, MAX, NAN, INF>(b)
-    {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
         return NAN;
     }
 
@@ -40,21 +39,13 @@ pub const fn addsub<
                 return NAN;
             }
 
-            return if a_inf {
-                a
-            } else {
-                b ^ sign_toggle
-            };
+            return if a_inf { a } else { b ^ sign_toggle };
         }
     }
 
     if a_abs == 0 {
         if b_abs == 0 {
-            return if SUB {
-                a & !b
-            } else {
-                a & b
-            };
+            return if SUB { a & !b } else { a & b };
         }
 
         return b ^ sign_toggle;
@@ -84,11 +75,7 @@ pub const fn addsub<
         return 0;
     }
 
-    encode_finite::<F, E, B, W, MAX, NAN, INF>(
-        sum < 0,
-        sum.unsigned_abs(),
-        1 - B as i32 - F as i32,
-    )
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(sum < 0, sum.unsigned_abs(), 1 - B as i32 - F as i32)
 }
 
 #[inline(always)]

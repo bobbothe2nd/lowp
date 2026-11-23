@@ -1,5 +1,5 @@
 use crate::bit::{
-    ops::{is_nan, sign_mask, encode_finite},
+    ops::{encode_finite, is_nan, sign_mask},
     NO_INF,
 };
 
@@ -16,9 +16,7 @@ pub const fn rem<
     a: u8,
     b: u8,
 ) -> u8 {
-    if is_nan::<F, E, W, MAX, NAN, INF>(a)
-        || is_nan::<F, E, W, MAX, NAN, INF>(b)
-    {
+    if is_nan::<F, E, W, MAX, NAN, INF>(a) || is_nan::<F, E, W, MAX, NAN, INF>(b) {
         return NAN;
     }
 
@@ -39,11 +37,7 @@ pub const fn rem<
 
         if a_inf || b_inf {
             if a_inf {
-                return if const { NAN != MAX } {
-                    sm
-                } else {
-                    0
-                } | NAN;
+                return if const { NAN != MAX } { sm } else { 0 } | NAN;
             }
 
             return a;
@@ -51,11 +45,7 @@ pub const fn rem<
     }
 
     if b_zero {
-        return if const { NAN != MAX } {
-            sm
-        } else {
-            0
-        } | NAN;
+        return if const { NAN != MAX } { sm } else { 0 } | NAN;
     }
 
     if a_zero {
@@ -132,9 +122,5 @@ pub const fn rem<
         (a_sig % divisor, a_power)
     };
 
-    encode_finite::<F, E, B, W, MAX, NAN, INF>(
-        negative,
-        remainder,
-        result_power,
-    )
+    encode_finite::<F, E, B, W, MAX, NAN, INF>(negative, remainder, result_power)
 }
